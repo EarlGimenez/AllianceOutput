@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --primary: 210 60% 31%;
+    --primary-foreground: 210 40% 98%;
+    --highlight: 280 30% 43%;
+  }
+
+  /* Custom Styles from Original Project */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(7, 1fr);
+    grid-template-rows: 40px repeat(24, 40px);
+  }
+
+  .calendar-grid-month {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: 40px repeat(5, 1fr);
+  }
+
+  .time-column {
+    grid-column: 1;
+  }
+
+  .day-column {
+    border-left: 1px solid #e5e7eb;
+  }
+
+  .calendar-event {
+    background-color: #1e5393;
+    color: white;
+    border-radius: 4px;
+    padding: 4px;
+    margin: 2px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .sidebar-nav {
+    width: 240px;
+    background-color: #1e5393;
+    color: white;
+    height: 100vh;
+  }
+
+  /* Add styles for the header and footer */
+  .site-header {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .active-nav-item {
+    background-color: #725188;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+  }
+
+  .testimonial-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 285px;
+    height: 100%;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background-color: #d2e4ff;
+  }
+
+  .testimonial-quote {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .testimonial-author {
+    display: flex;
+    align-items: center;
+  }
+
+  .author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+  }
+}
