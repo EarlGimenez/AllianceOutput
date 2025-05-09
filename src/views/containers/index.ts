@@ -1,15 +1,15 @@
 export * from "./Main";
 export { default as Homepage } from "./Homepage";
-export * from "./About"
-export * from "./Contact"
-export * from "./Register"
-export * from "./Recovery"
-export * from "./Login";
+export { default as About } from "./About"
+export { default as Contact } from "./Contact"
+export { default as Register } from "./Register"
+export { default as Recovery } from "./Recovery"
+export { default as Login } from "./Login";
 export * from "./Logout";
 export * from "./UserDayView"
 export * from "./UserReservation"
 export * from "./AdminCalendar"
 export * from "./AdminRequests"
 export * from "./AdminAnalytics"
-export * from "./NotFound";
+export { default as NotFound } from "./NotFound";
 export * from "./UserDashboard";

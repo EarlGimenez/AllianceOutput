@@ -1,10 +1,28 @@
-import { Link } from "react-router-dom";
-import Button from "../../components/Button";
-import { LandingNav } from "../../components/LandingNav";
-import { SiteFooter } from "../../components/SiteFooter";
-import UserIcon from "../../components/UserIcon"; // Import the updated UserIcon
+"use client"
 
-const Homepage = () => {
+import type React from "react"
+import { Link } from "react-router-dom"
+import {
+  Box,
+  Typography,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Avatar,
+  Button,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material"
+import PersonIcon from "@mui/icons-material/Person"
+import { LandingNav } from "../../components/LandingNav"
+import { SiteFooter } from "../../components/SiteFooter"
+import { PATHS } from "../../../constant"
+
+const Homepage: React.FC = () => {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+
   // Testimonial data
   const testimonials = [
     {
@@ -41,70 +59,142 @@ const Homepage = () => {
       name: "Robert Wilson",
       title: "CEO",
     },
-  ];
+  ]
 
   return (
-    <main className="min-h-screen flex flex-col">
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
       <LandingNav />
 
-      {/* Top image placeholder - 66px tall */}
-      <div className="h-[66px] bg-gray-200 w-full">
-        <img src="/placeholder.svg" alt="Top banner" className="w-full h-full object-cover" />
-      </div>
+      {/* Top image banner - 66px tall */}
+      <Box sx={{ height: "66px", width: "100%", bgcolor: "grey.200" }}>
+        <Box
+          component="img"
+          src="/placeholder.svg"
+          alt="Top banner"
+          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </Box>
 
       {/* Main banner - 524px tall */}
-      <div className="h-[524px] bg-[#1e5393] text-white flex flex-col items-center justify-center text-center px-4">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6">Bookit</h1>
-        <p className="text-xl md:text-2xl mb-10 max-w-2xl">Your Meeting Reservation Platform</p>
-        <div className="flex gap-4">
-          <Button asChild size="lg" variant="secondary">
-            <Link to="/sign-in">Sign In</Link>
+      <Box
+        sx={{
+          height: "524px",
+          width: "100%",
+          bgcolor: "#1e5393",
+          color: "white",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          px: 2,
+        }}
+      >
+        <Typography variant="h2" component="h1" sx={{ mb: 3, fontWeight: "bold" }}>
+          Bookit
+        </Typography>
+        <Typography variant="h5" sx={{ mb: 5, maxWidth: "600px" }}>
+          Your Meeting Reservation Platform
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            variant="contained"
+            component={Link}
+            to={PATHS.LOGIN.path}
+            sx={{
+              bgcolor: "#f0f4f9",
+              color: "#1e5393",
+              "&:hover": {
+                bgcolor: "#e1eaf3",
+              },
+              px: 4,
+              py: 1.5,
+            }}
+          >
+            Sign In
           </Button>
-          <Button asChild size="lg" variant="secondary">
-            <Link to="/sign-up">Register</Link>
+          <Button
+            variant="contained"
+            component={Link}
+            to={PATHS.REGISTER.path}
+            sx={{
+              bgcolor: "#f0f4f9",
+              color: "#1e5393",
+              "&:hover": {
+                bgcolor: "#e1eaf3",
+              },
+              px: 4,
+              py: 1.5,
+            }}
+          >
+            Register
           </Button>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      {/* Middle image placeholder - 240px tall */}
-      <div className="h-[240px] bg-gray-200 w-full">
-        <img src="/placeholder.svg" alt="Middle banner" className="w-full h-full object-cover" />
-      </div>
+      {/* Middle image banner - 240px tall */}
+      <Box sx={{ height: "240px", width: "100%", bgcolor: "grey.200" }}>
+        <Box
+          component="img"
+          src="/placeholder.svg"
+          alt="Middle banner"
+          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </Box>
 
       {/* Testimonials section */}
-      <section className="py-16 bg-[#1e5393] text-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-6">What Our Users Say</h2>
-            <p className="text-lg max-w-3xl mx-auto">
+      <Box sx={{ py: 8, bgcolor: "#1e5393", color: "white", width: "100%" }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: "center", mb: 6 }}>
+            <Typography variant="h4" component="h2" sx={{ mb: 3, fontWeight: "bold" }}>
+              What Our Users Say
+            </Typography>
+            <Typography variant="body1" sx={{ maxWidth: "800px", mx: "auto" }}>
               Find the perfect meeting room anytime, anywhere. Check availability, book instantly, and make your
               meetings memorable—effortless scheduling at your fingertips!
-            </p>
-          </div>
+            </Typography>
+          </Box>
 
           {/* Testimonial cards - 3x2 grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <Grid container spacing={3}>
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="testimonial-card text-gray-900 mx-auto">
-                <div className="testimonial-quote">"{testimonial.quote}"</div>
-                <div className="testimonial-author">
-                  <div className="author-avatar bg-gray-300 flex items-center justify-center">
-                    <UserIcon className="h-5 w-5 text-gray-600" /> {/* Now it accepts className */}
-                  </div>
-                  <div>
-                    <div className="font-medium">{testimonial.name}</div>
-                    <div className="text-sm text-gray-600">{testimonial.title}</div>
-                  </div>
-                </div>
-              </div>
+              <Grid item xs={12} md={6} lg={4} key={index}>
+                <Card sx={{ height: "100%", boxShadow: 3 }}>
+                  <CardContent sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        fontStyle: "italic",
+                        mb: 2,
+                        flexGrow: 1,
+                      }}
+                    >
+                      "{testimonial.quote}"
+                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Avatar sx={{ bgcolor: "grey.300" }}>
+                        <PersonIcon sx={{ color: "grey.600" }} />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: "medium" }}>
+                          {testimonial.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {testimonial.title}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             ))}
-          </div>
-        </div>
-      </section>
+          </Grid>
+        </Container>
+      </Box>
 
       <SiteFooter />
-    </main>
-  );
-};
+    </Box>
+  )
+}
 
-export default Homepage;
+export default Homepage
