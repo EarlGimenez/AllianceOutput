@@ -8,6 +8,10 @@ export const PATHS = {
     path: "/home",
     label: "Homepage"
   },
+  CALENDAR: {
+    path: "/calendar",
+    label: "Calendar" 
+  },
   ABOUT: {
     path: "/about",
     label: "About"
