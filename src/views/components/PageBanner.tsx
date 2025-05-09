@@ -1,25 +1,90 @@
+import type React from "react"
+import { Box, Typography, Container } from "@mui/material"
+
 interface PageBannerProps {
-  title?: string
-  subtitle?: string
-  imageSrc?: string
+  imageSrc: string
+  imageAlt: string
+  header: string
+  subheader?: string
+  height?: { xs?: string; sm?: string; md?: string; lg?: string; xl?: string } | string
+  overlayColor?: string
+  textColor?: string
+  textAlign?: "left" | "center" | "right"
 }
 
-export function PageBanner({
-  title = "BookIt",
-  subtitle = "Your Meeting Reservation Platform",
-  imageSrc = "/placeholder.svg",
-}: PageBannerProps) {
+export const PageBanner: React.FC<PageBannerProps> = ({
+  imageSrc,
+  imageAlt,
+  header,
+  subheader,
+  height = { xs: "200px", md: "300px" },
+  overlayColor = "rgba(0,0,0,0.4)",
+  textColor = "white",
+  textAlign = "center",
+}) => {
   return (
-    <div className="relative h-[452px] w-full">
-      {/* Image with dark overlay */}
-      <div className="absolute inset-0 bg-black/40 z-10"></div>
-      <img src={imageSrc || "/placeholder.svg"} alt="Banner" className="w-full h-full object-cover" />
+    <Box
+      sx={{
+        height: height,
+        width: "100%",
+        position: "relative",
+      }}
+    >
+      <Box
+        component="img"
+        src={imageSrc}
+        alt={imageAlt}
+        sx={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: overlayColor,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Typography
+            variant="h3"
+            component="h2"
+            sx={{
+              color: textColor,
+              fontWeight: "bold",
+              textAlign: textAlign,
+              textShadow: "1px 1px 3px rgba(0,0,0,0.5)",
+              mb: subheader ? 2 : 0,
+            }}
+          >
+            {header}
+          </Typography>
 
-      {/* Text overlay */}
-      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white text-center px-4">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4">{title}</h1>
-        <p className="text-xl md:text-2xl">{subtitle}</p>
-      </div>
-    </div>
+          {subheader && (
+            <Typography
+              variant="h5"
+              sx={{
+                color: textColor,
+                textAlign: textAlign,
+                textShadow: "1px 1px 3px rgba(0,0,0,0.5)",
+                maxWidth: "800px",
+                mx: textAlign === "center" ? "auto" : 0,
+              }}
+            >
+              {subheader}
+            </Typography>
+          )}
+        </Container>
+      </Box>
+    </Box>
   )
 }

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import {
   AppBar,
   Toolbar,
@@ -25,6 +25,7 @@ export const LandingNav: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
+  const location = useLocation()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -37,6 +38,8 @@ export const LandingNav: React.FC = () => {
     { name: "Sign In", path: PATHS.LOGIN.path },
     { name: "Register", path: PATHS.REGISTER.path },
   ]
+
+  const isActive = (path: string) => location.pathname === path
 
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: "center" }}>
@@ -51,9 +54,10 @@ export const LandingNav: React.FC = () => {
                 to={item.path}
                 style={{
                   textDecoration: "none",
-                  color: "#1e5393",
+                  color: isActive(item.path) ? "#ffffff" : "#1e5393",
                   display: "block",
                   padding: "8px 16px",
+                  backgroundColor: isActive(item.path) ? "#1e5393" : "transparent",
                 }}
               >
                 {item.name}
@@ -114,7 +118,28 @@ export const LandingNav: React.FC = () => {
 
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" }, justifyContent: "flex-end" }}>
             {navItems.map((item) => (
-              <Button key={item.name} component={Link} to={item.path} sx={{ color: "white", display: "block", mx: 1 }}>
+              <Button
+                key={item.name}
+                component={Link}
+                to={item.path}
+                sx={{
+                  color: "white",
+                  display: "block",
+                  mx: 1,
+                  backgroundColor: isActive(item.path) ? "rgba(255, 255, 255, 0.2)" : "transparent",
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  },
+                  ...(item.name === "Sign In" || item.name === "Register"
+                    ? {
+                        backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        "&:hover": {
+                          backgroundColor: "rgba(255, 255, 255, 0.3)",
+                        },
+                      }
+                    : {}),
+                }}
+              >
                 {item.name}
               </Button>
             ))}

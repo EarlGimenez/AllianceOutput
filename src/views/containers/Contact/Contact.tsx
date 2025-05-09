@@ -22,6 +22,7 @@ import PhoneIcon from "@mui/icons-material/Phone"
 import EmailIcon from "@mui/icons-material/Email"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
+import { PageBanner } from "../../components/PageBanner"
 
 const Contact: React.FC = () => {
   const theme = useTheme()
@@ -194,6 +195,48 @@ const Contact: React.FC = () => {
           </Grid>
         </Grid>
       </Container>
+      
+      {/* Banner Image */}
+      <PageBanner
+        imageSrc="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+        imageAlt="Contact Banner"
+        header="Bookit"
+        subheader="Your Meeting Reservation Partner"
+        overlayColor="rgba(0,0,0,0.4)"
+      />
+
+      {/* Banner before footer */}
+      <Box
+        sx={{
+          bgcolor: "#f0f4f9",
+          py: 6,
+          textAlign: "center",
+          width: "100%",
+        }}
+      >
+        <Container maxWidth="md">
+          <Typography variant="h4" component="h2" gutterBottom sx={{ color: "#1e5393", fontWeight: "bold" }}>
+            Ready to simplify your meeting management?
+          </Typography>
+          <Typography variant="body1" paragraph sx={{ mb: 4 }}>
+            Join thousands of satisfied users who have transformed their scheduling experience with Bookit.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            sx={{
+              px: 4,
+              py: 1.5,
+              bgcolor: "#1e5393",
+              "&:hover": {
+                bgcolor: "#184377",
+              },
+            }}
+          >
+            Get Started Today
+          </Button>
+        </Container>
+      </Box>
 
       <Snackbar open={submitted} autoHideDuration={6000} onClose={handleClose}>
         <Alert onClose={handleClose} severity="success" sx={{ width: "100%" }}>

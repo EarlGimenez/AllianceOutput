@@ -19,8 +19,8 @@ const AccountRecovery: React.FC = () => {
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
       <LandingNav />
 
-      <Container component="main" maxWidth="sm" sx={{ py: 8 }}>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+      <Container component="main" maxWidth="sm" sx={{ py: 8, flexGrow: 1, display: "flex", alignItems: "center" }}>
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2, width: "100%" }}>
           <Typography variant="h4" component="h1" align="center" gutterBottom sx={{ fontWeight: "bold" }}>
             Account Recovery
           </Typography>
@@ -29,15 +29,18 @@ const AccountRecovery: React.FC = () => {
           </Typography>
 
           {submitted ? (
-            <Box sx={{ textAlign: "center" }}>
-              <Alert severity="success" sx={{ mb: 3 }}>
-                Recovery email sent! Please check your inbox.
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Alert severity="success" sx={{ mb: 3, fontSize: "1rem" }}>
+                Recovery email sent!
               </Alert>
-              <Typography variant="body2" paragraph>
+              <Typography variant="h6" paragraph sx={{ fontWeight: "medium", color: "#1e5393" }}>
+                Please check your inbox
+              </Typography>
+              <Typography variant="body1" paragraph>
                 We've sent a password reset link to your email address. Please check your inbox and follow the
                 instructions to reset your password.
               </Typography>
-              <Typography variant="body2" paragraph>
+              <Typography variant="body2" paragraph sx={{ mb: 4 }}>
                 If you don't receive the email within a few minutes, please check your spam folder.
               </Typography>
               <Button
@@ -46,6 +49,8 @@ const AccountRecovery: React.FC = () => {
                 variant="contained"
                 sx={{
                   mt: 2,
+                  px: 4,
+                  py: 1.5,
                   bgcolor: "#1e5393",
                   "&:hover": {
                     bgcolor: "#184377",

@@ -16,11 +16,13 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Avatar,
 } from "@mui/material"
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline"
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
+import { PageBanner } from "../../components/PageBanner"
 
 const Resources: React.FC = () => {
   // FAQ data
@@ -74,6 +76,46 @@ const Resources: React.FC = () => {
       title: "Virtual Meeting Integration",
       description: "Tips for seamlessly integrating virtual participants into your in-person meetings.",
       image: "/placeholder.svg",
+    },
+  ]
+
+  // Team members data
+  const teamMembers = [
+    {
+      name: "Alexandra Johnson",
+      title: "Founder & CEO",
+      description: "Visionary leader with 15+ years in tech and enterprise solutions.",
+      avatar: "AJ",
+    },
+    {
+      name: "Michael Chen",
+      title: "CTO",
+      description: "Software architect with a passion for creating intuitive user experiences.",
+      avatar: "MC",
+    },
+    {
+      name: "Sarah Williams",
+      title: "Head of Product",
+      description: "Product strategist focused on solving real-world scheduling challenges.",
+      avatar: "SW",
+    },
+    {
+      name: "David Rodriguez",
+      title: "Lead Developer",
+      description: "Full-stack engineer specializing in real-time systems and integrations.",
+      avatar: "DR",
+    },
+    {
+      name: "Emily Taylor",
+      title: "UX Designer",
+      description: "Award-winning designer creating beautiful and functional interfaces.",
+      avatar: "ET",
+    },
+    {
+      name: "Robert Wilson",
+      title: "Customer Success",
+      description: "Dedicated to ensuring clients get the most from their Bookit experience.",
+      avatar: "RW",
     },
   ]
 
@@ -165,6 +207,71 @@ const Resources: React.FC = () => {
                 Learn More About Features
               </Button>
             </Grid>
+          </Grid>
+        </Box>
+
+        {/* Large Banner Images */}
+        <Box sx={{ my: 8 }}>
+          <Grid container spacing={4}>
+            <Grid item xs={12}>
+              <PageBanner
+                imageSrc="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+                imageAlt="Bookit Meeting Rooms"
+                header="Bookit: Your Meeting Reservation Solution"
+                subheader="Simplify scheduling, maximize productivity, and make every meeting count"
+                height="400px"
+                overlayColor="rgba(0,0,0,0.6)"
+              />
+            </Grid>
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <PageBanner
+                imageSrc="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+                imageAlt="Bookit Dashboard"
+                header="Powerful, Intuitive Dashboard"
+                subheader="Everything you need to manage your meetings in one place"
+                height="300px"
+                overlayColor="rgba(30, 83, 147, 0.8)"
+              />
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Team Section */}
+        <Box sx={{ mb: 8 }}>
+          <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: "bold", textAlign: "center", mb: 2 }}>
+            Meet the Makers
+          </Typography>
+          <Typography variant="body1" paragraph sx={{ textAlign: "center", mb: 6, maxWidth: "800px", mx: "auto" }}>
+            Discover the people behind Bookit who are passionate about creating the best meeting reservation platform
+            for modern businesses.
+          </Typography>
+
+          <Grid container spacing={3}>
+            {teamMembers.map((member, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Card sx={{ height: "100%", minHeight: "260px" }}>
+                  <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 3 }}>
+                    <Avatar sx={{ width: 80, height: 80, mb: 2, bgcolor: "#1e5393", fontSize: "1.5rem" }}>
+                      {member.avatar}
+                    </Avatar>
+                    <Typography variant="h6" gutterBottom sx={{ textAlign: "center" }}>
+                      {member.name}
+                    </Typography>
+                    <Typography
+                      variant="subtitle2"
+                      color="primary"
+                      gutterBottom
+                      sx={{ textAlign: "center", color: "#1e5393" }}
+                    >
+                      {member.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
+                      {member.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
         </Box>
 

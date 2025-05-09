@@ -69,7 +69,7 @@ const Homepage: React.FC = () => {
       <Box sx={{ height: "66px", width: "100%", bgcolor: "grey.200" }}>
         <Box
           component="img"
-          src="/placeholder.svg"
+          src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
           alt="Top banner"
           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -136,7 +136,7 @@ const Homepage: React.FC = () => {
       <Box sx={{ height: "240px", width: "100%", bgcolor: "grey.200" }}>
         <Box
           component="img"
-          src="/placeholder.svg"
+          src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
           alt="Middle banner"
           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -159,7 +159,7 @@ const Homepage: React.FC = () => {
           <Grid container spacing={3}>
             {testimonials.map((testimonial, index) => (
               <Grid item xs={12} md={6} lg={4} key={index}>
-                <Card sx={{ height: "100%", boxShadow: 3 }}>
+                <Card sx={{ height: "100%", minHeight: "220px", boxShadow: 3 }}>
                   <CardContent sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
                     <Typography
                       variant="body1"
