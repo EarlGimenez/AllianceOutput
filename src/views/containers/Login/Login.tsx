@@ -15,6 +15,7 @@ import {
 import GoogleIcon from "@mui/icons-material/Google"
 import FacebookIcon from "@mui/icons-material/Facebook"
 import AppleIcon from "@mui/icons-material/Apple"
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
 import { PATHS } from "../../../constant"
@@ -110,6 +111,18 @@ const SignIn: React.FC = () => {
                   Sign up
                 </Link>
               </Typography>
+            </Box>
+
+            {/* Admin Login Link */}
+            <Box sx={{ textAlign: "center", mt: 3, pt: 3, borderTop: "1px dashed rgba(0,0,0,0.1)" }}>
+              <Button
+                component={Link}
+                to={PATHS.ADMIN_LOGIN.path}
+                startIcon={<AdminPanelSettingsIcon />}
+                sx={{ color: "#1e5393" }}
+              >
+                Admin Login
+              </Button>
             </Box>
           </Box>
         </Paper>

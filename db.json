@@ -1,10 +1,133 @@
 {
-  "statistics": [
+  "rooms": [
     {
-      "report1": "Sample Response 1"
+      "id": "1",
+      "name": "Conference Room A",
+      "location": "1st Floor, East Wing",
+      "timeStart": "08:00",
+      "timeEnd": "18:00"
     },
     {
-      "report2": "Sample Response 2"
+      "id": "2",
+      "name": "Meeting Room 101",
+      "location": "2nd Floor, West Wing",
+      "timeStart": "09:00",
+      "timeEnd": "17:00"
+    },
+    {
+      "id": "3",
+      "name": "Board Room",
+      "location": "3rd Floor, Executive Suite",
+      "timeStart": "08:30",
+      "timeEnd": "19:00"
+    },
+    {
+      "id": "4",
+      "name": "Huddle Space 1",
+      "location": "1st Floor, North Wing",
+      "timeStart": "08:00",
+      "timeEnd": "20:00"
+    },
+    {
+      "id": "5",
+      "name": "Training Room",
+      "location": "2nd Floor, South Wing",
+      "timeStart": "09:00",
+      "timeEnd": "18:00"
+    },
+    {
+      "id": "6",
+      "name": "Creative Studio",
+      "location": "4th Floor, Design Department",
+      "timeStart": "10:00",
+      "timeEnd": "16:00"
+    },
+    {
+      "id": "7",
+      "name": "Focus Room 3",
+      "location": "2nd Floor, Quiet Zone",
+      "timeStart": "08:00",
+      "timeEnd": "18:00"
+    },
+    {
+      "id": "8",
+      "name": "Collaboration Space",
+      "location": "3rd Floor, Innovation Hub",
+      "timeStart": "09:00",
+      "timeEnd": "17:30"
+    },
+    {
+      "id": "842d",
+      "name": "test",
+      "location": "test",
+      "timeStart": "08:00",
+      "timeEnd": "18:00"
+    }
+  ],
+  "users": [
+    {
+      "email": "john.doe@example.com",
+      "username": "johndoe",
+      "fullName": "John Doe test",
+      "company": "Acme Inc.",
+      "id": "1"
+    },
+    {
+      "id": "2",
+      "email": "jane.smith@example.com",
+      "username": "janesmith",
+      "fullName": "Jane Smith",
+      "company": "Globex Corp"
+    },
+    {
+      "id": "3",
+      "email": "michael.johnson@example.com",
+      "username": "michaelj",
+      "fullName": "Michael Johnson",
+      "company": "Acme Inc."
+    },
+    {
+      "id": "4",
+      "email": "sarah.williams@example.com",
+      "username": "sarahw",
+      "fullName": "Sarah Williams",
+      "company": "Initech"
+    },
+    {
+      "id": "5",
+      "email": "robert.brown@example.com",
+      "username": "robbrown",
+      "fullName": "Robert Brown",
+      "company": "Umbrella Corp"
+    },
+    {
+      "id": "6",
+      "email": "emily.davis@example.com",
+      "username": "emilyd",
+      "fullName": "Emily Davis",
+      "company": "Globex Corp"
+    },
+    {
+      "id": "7",
+      "email": "david.miller@example.com",
+      "username": "davidm",
+      "fullName": "David Miller",
+      "company": "Initech"
+    },
+    {
+      "id": "8",
+      "email": "jennifer.wilson@example.com",
+      "username": "jenniferw",
+      "fullName": "Jennifer Wilson",
+      "company": "Acme Inc."
+    },
+    {
+      "id": "ed95",
+      "email": "test@test.com",
+      "username": "test",
+      "fullName": "test",
+      "company": "test",
+      "password": "testtest"
     }
   ]
 }

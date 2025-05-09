@@ -69,7 +69,7 @@ const Homepage: React.FC = () => {
       <Box sx={{ height: "66px", width: "100%", bgcolor: "grey.200" }}>
         <Box
           component="img"
-          src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+          src="/placeholder.svg"
           alt="Top banner"
           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -136,7 +136,7 @@ const Homepage: React.FC = () => {
       <Box sx={{ height: "240px", width: "100%", bgcolor: "grey.200" }}>
         <Box
           component="img"
-          src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+          src="/placeholder.svg"
           alt="Middle banner"
           sx={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -159,8 +159,8 @@ const Homepage: React.FC = () => {
           <Grid container spacing={3}>
             {testimonials.map((testimonial, index) => (
               <Grid item xs={12} md={6} lg={4} key={index}>
-                <Card sx={{ height: "100%", minHeight: "220px", boxShadow: 3 }}>
-                  <CardContent sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+                <Card sx={{ height: "100%", display: "flex", flexDirection: "column", boxShadow: 3 }}>
+                  <CardContent sx={{ display: "flex", flexDirection: "column", height: "100%", pb: 2 }}>
                     <Typography
                       variant="body1"
                       sx={{
@@ -171,8 +171,8 @@ const Homepage: React.FC = () => {
                     >
                       "{testimonial.quote}"
                     </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar sx={{ bgcolor: "grey.300" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: "auto", pt: 1 }}>
+                      <Avatar sx={{ bgcolor: "grey.300", width: 40, height: 40, flexShrink: 0 }}>
                         <PersonIcon sx={{ color: "grey.600" }} />
                       </Avatar>
                       <Box>

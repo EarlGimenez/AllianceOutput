@@ -44,17 +44,41 @@ export const PATHS = {
     path: "/user-reservation",
     label: "User Reservation"
   },
+  ADMIN_LOGIN: {
+    path: "/admin/login",
+    name: "Admin Login",
+  },
+  ADMIN_DASHBOARD: {
+    path: "/admin/dashboard",
+    name: "Admin Dashboard",
+  },
   ADMIN_CALENDAR: {
-    path: "/admin-calendar",
-    label: "Admin Calendar"
+    path: "/admin/calendar",
+    name: "Admin Calendar",
   },
-  ADMIN_REQUESTS: {
-    path: "/admin-requests",
-    label: "Admin Requests"
+  ADMIN_ROOMS: {
+    path: "/admin/rooms",
+    name: "Admin Rooms",
   },
-  ADMIN_ANALYTICS: {
-    path: "/admin-analytics",
-    label: "Admin Analytics"
+  ADMIN_ROOMS_CREATE: {
+    path: "/admin/rooms/create",
+    name: "Create Room",
+  },
+  ADMIN_ROOMS_EDIT: {
+    path: "/admin/rooms/edit/:id",
+    name: "Edit Room",
+  },
+  ADMIN_USERS: {
+    path: "/admin/users",
+    name: "Admin Users",
+  },
+  ADMIN_USERS_CREATE: {
+    path: "/admin/users/create",
+    name: "Create User",
+  },
+  ADMIN_USERS_EDIT: {
+    path: "/admin/users/edit/:id",
+    name: "Edit User",
   },
   NOT_FOUND: {
     path: "*",
