@@ -66,14 +66,30 @@ export const LandingNav: React.FC = () => {
             </ListItemText>
           </ListItem>
         ))}
+        <ListItem disablePadding>
+          <ListItemText>
+            <Link
+              to={PATHS.ADMIN_LOGIN.path}
+              style={{
+                textDecoration: "none",
+                color: isActive(PATHS.ADMIN_LOGIN.path) ? "#ffffff" : "#1e5393",
+                display: "block",
+                padding: "8px 16px",
+                backgroundColor: isActive(PATHS.ADMIN_LOGIN.path) ? "#1e5393" : "transparent",
+              }}
+            >
+              Admin
+            </Link>
+          </ListItemText>
+        </ListItem>
       </List>
     </Box>
   )
 
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#1e5393", boxShadow: 0 }}>
+    <AppBar position="static" sx={{ backgroundColor: "#1e5393", boxShadow: 0, height: "auto" }}>
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
+        <Toolbar disableGutters sx={{ minHeight: "64px", py: 1 }}>
           <Typography
             variant="h6"
             component={Link}
@@ -96,7 +112,7 @@ export const LandingNav: React.FC = () => {
               edge="start"
               color="inherit"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+              sx={{ mr: 2, padding: "8px" }}
             >
               <MenuIcon />
             </IconButton>
@@ -144,6 +160,21 @@ export const LandingNav: React.FC = () => {
                 {item.name}
               </Button>
             ))}
+            <Button
+              component={Link}
+              to={PATHS.ADMIN_LOGIN.path}
+              sx={{
+                color: "white",
+                display: "block",
+                mx: 1,
+                backgroundColor: isActive(PATHS.ADMIN_LOGIN.path) ? "rgba(255, 255, 255, 0.2)" : "transparent",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                },
+              }}
+            >
+              Admin
+            </Button>
           </Box>
         </Toolbar>
       </Container>
