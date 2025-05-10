@@ -1,7 +1,7 @@
 "use client"
 
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { JSX, useEffect, useState } from "react"
 import * as Views from "./views/containers"
 import { PATHS } from "./constant"
 
