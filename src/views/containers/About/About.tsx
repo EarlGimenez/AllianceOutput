@@ -82,41 +82,35 @@ const Resources: React.FC = () => {
   // Team members data
   const teamMembers = [
     {
-      name: "Alexandra Johnson",
+      name: "Patricio Jose Najeal",
       title: "Founder & CEO",
-      description: "Visionary leader with 15+ years in tech and enterprise solutions.",
+      description: "Project Lead and Manager - Making sure everything works as intended.",
       avatar: "AJ",
     },
     {
-      name: "Michael Chen",
+      name: "Kristian Ceasar Panong",
       title: "CTO",
       description: "Software architect with a passion for creating intuitive user experiences.",
       avatar: "MC",
     },
     {
-      name: "Sarah Williams",
+      name: "Earl Reynan Gimenez",
       title: "Head of Product",
       description: "Product strategist focused on solving real-world scheduling challenges.",
       avatar: "SW",
     },
     {
-      name: "David Rodriguez",
+      name: "Dave Dominic Lactuan",
       title: "Lead Developer",
       description: "Full-stack engineer specializing in real-time systems and integrations.",
       avatar: "DR",
     },
     {
-      name: "Emily Taylor",
+      name: "Joshua Enad",
       title: "UX Designer",
       description: "Award-winning designer creating beautiful and functional interfaces.",
       avatar: "ET",
-    },
-    {
-      name: "Robert Wilson",
-      title: "Customer Success",
-      description: "Dedicated to ensuring clients get the most from their Bookit experience.",
-      avatar: "RW",
-    },
+    }
   ]
 
   return (
@@ -277,7 +271,7 @@ const Resources: React.FC = () => {
 
         <Divider sx={{ my: 6 }} />
 
-        {/* Resource Articles */}
+        {/* Resource Articles
         <Box sx={{ mb: 8 }}>
           <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: "bold", mb: 4 }}>
             Helpful Resources
@@ -305,7 +299,7 @@ const Resources: React.FC = () => {
               </Grid>
             ))}
           </Grid>
-        </Box>
+        </Box> */}
 
         <Divider sx={{ my: 6 }} />
 

@@ -80,7 +80,7 @@ const SignIn: React.FC = () => {
               Sign In
             </Button>
 
-            <Divider sx={{ my: 3 }}>
+            {/* <Divider sx={{ my: 3 }}>
               <Typography variant="body2" color="text.secondary">
                 OR
               </Typography>
@@ -102,7 +102,7 @@ const SignIn: React.FC = () => {
                   Apple
                 </Button>
               </Grid>
-            </Grid>
+            </Grid> */}
 
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2">
