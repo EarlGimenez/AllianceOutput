@@ -7,8 +7,15 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Divider,
-  Button, // Import Button from MUI
+  Button,
+  Popover, // Import Popover
+  List,     // For listing events in Popover
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Link,
 } from '@mui/material';
+import EventNoteIcon from '@mui/icons-material/EventNote'; // Example icon for events
 // import Button from '../../components/Button'; // Your custom Button
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
 import { LandingNav } from '../../components/LandingNav';
@@ -22,20 +29,13 @@ interface CalendarProps {
   onDeleteEvent?: (eventId: string) => void;
   currentDate: Date;
   onDateChange?: (date: Date) => void;
-  // To control the view (day/month) if these buttons are to be functional
-  // currentView?: 'day' | 'month';
-  // onViewChange?: (view: 'day' | 'month') => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
   events,
   onAddEvent,
   onEditEvent,
-  // onDeleteEvent, // Not used in this specific rendering, but kept for prop consistency
   currentDate,
-  // onDateChange, // Not used in this specific rendering for date navigation buttons
-  // currentView = 'day', // Default view
-  // onViewChange,
 }) => {
   const rooms: Room[] = [
     'Meeting Room',
@@ -50,8 +50,33 @@ const Calendar: React.FC<CalendarProps> = ({
     return `${hour.toString().padStart(2, '0')}:00`;
   });
 
-  // Placeholder for view state if you make Day/Month buttons functional
   const [view, setView] = useState<'day' | 'month'>('day');
+
+  // State for Popover
+  const [popoverAnchorEl, setPopoverAnchorEl] = useState<HTMLElement | null>(null);
+  const [popoverEvents, setPopoverEvents] = useState<CalendarEvent[]>([]);
+  const [popoverDate, setPopoverDate] = useState<Date | null>(null);
+
+  const handlePopoverOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    dayEvents: CalendarEvent[],
+    date: Date
+  ) => {
+    setPopoverAnchorEl(event.currentTarget);
+    setPopoverEvents(dayEvents);
+    setPopoverDate(date);
+  };
+
+  const handlePopoverClose = () => {
+    setPopoverAnchorEl(null);
+    // Optionally clear popoverEvents and popoverDate after a delay or on transition end
+    // For now, clear immediately for simplicity
+    // setPopoverEvents([]);
+    // setPopoverDate(null);
+  };
+
+  const openPopover = Boolean(popoverAnchorEl);
+  const popoverId = openPopover ? 'month-day-popover' : undefined;
 
   const handleViewChange = (
     event: React.MouseEvent<HTMLElement>,
@@ -59,25 +84,20 @@ const Calendar: React.FC<CalendarProps> = ({
   ) => {
     if (newView !== null) {
       setView(newView);
-      // if (onViewChange) {
-      //   onViewChange(newView);
-      // }
     }
   };
 
   const renderMonthView = () => {
     const year = currentDate.getFullYear();
-    const month = currentDate.getMonth(); // 0-indexed
+    const month = currentDate.getMonth();
 
     const firstDayOfMonth = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startDayOffset = firstDayOfMonth.getDay(); // 0 for Sunday, 1 for Monday ...
+    const startDayOffset = firstDayOfMonth.getDay();
 
     const dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
     const cells = [];
 
-    // Add empty cells for days before the first of the month
     for (let i = 0; i < startDayOffset; i++) {
       cells.push(
         <Paper
@@ -85,80 +105,7 @@ const Calendar: React.FC<CalendarProps> = ({
           square
           key={`empty-start-${i}`}
           sx={{
-            minHeight: { xs: 80, sm: 100, md: 120 },
-            p: 1,
-            boxSizing: 'border-box',
-            bgcolor: 'grey.50', // Lighter background for empty cells
-            border: '1px solid transparent', // To maintain grid structure if needed
-          }}
-        />
-      );
-    }
-
-    // Add cells for each day of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const cellDate = new Date(year, month, day);
-      // Placeholder: In a real app, filter events for this cellDate
-      // const eventsForDay = events.filter(event => event.date === cellDate.toISOString().split('T')[0]);
-      // const reservedCount = eventsForDay.length;
-      // const availableCount = 4 - reservedCount; // Example logic
-
-      cells.push(
-        <Paper
-          // variant="outlined" // The image shows solid color cells
-          elevation={1} // Slight elevation for a bit of depth
-          square
-          key={`day-${day}`}
-          sx={{
-            minHeight: { xs: 80, sm: 100, md: 120 },
-            p: 1,
-            boxSizing: 'border-box',
-            bgcolor: '#0d47a1', // Dark blue, adjust as needed (e.g., theme.palette.primary.dark)
-            color: 'white', // (e.g. theme.palette.primary.contrastText)
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between', // Pushes content to top and bottom
-            cursor: 'pointer',
-            borderRadius: 1, // Slight rounding as in image
-            '&:hover': {
-              bgcolor: '#1565c0', // Slightly lighter blue on hover
-            },
-          }}
-          // onClick={() => console.log('Clicked on', cellDate)} // Optional: handle day click
-        >
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-              {cellDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </Typography>
-          </Box>
-          <Box sx={{ mt: 'auto' }}> {/* Pushes this content to the bottom */}
-            <Typography variant="caption" display="block">4 Available</Typography> {/* Placeholder */}
-            <Typography variant="caption" display="block">1 Reserved</Typography> {/* Placeholder */}
-            {/* Example for discount:
-            {day % 5 === 0 && ( // Just an example condition
-              <Typography variant="caption" display="block" sx={{ color: 'warning.light' }}>
-                @ 20% off
-              </Typography>
-            )}
-            */}
-          </Box>
-        </Paper>
-      );
-    }
-    
-    // Add empty cells to fill the last week for a consistent grid (up to 6 weeks = 42 cells)
-    const totalGridCells = Math.ceil((startDayOffset + daysInMonth) / 7) * 7;
-    // Ensure we don't exceed 42 cells (6 weeks * 7 days)
-    const cellsToFill = Math.min(totalGridCells, 42);
-
-    while (cells.length < cellsToFill) {
-      cells.push(
-        <Paper
-          variant="outlined"
-          square
-          key={`empty-end-${cells.length}`}
-          sx={{
-            minHeight: { xs: 80, sm: 100, md: 120 },
+            minHeight: { xs: 100, sm: 120, md: 140 }, // Increased minHeight for event text
             p: 1,
             boxSizing: 'border-box',
             bgcolor: 'grey.50',
@@ -168,44 +115,113 @@ const Calendar: React.FC<CalendarProps> = ({
       );
     }
 
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cellDate = new Date(year, month, day);
+      const cellDateString = cellDate.toISOString().split('T')[0]; // YYYY-MM-DD for comparison
+
+      const eventsForDay = events.filter(event => event.date === cellDateString);
+
+      cells.push(
+        <Paper
+          elevation={1}
+          square
+          key={`day-${day}`}
+          aria-owns={openPopover && popoverDate?.getTime() === cellDate.getTime() ? popoverId : undefined}
+          aria-haspopup="true"
+          onMouseEnter={(e) => eventsForDay.length > 0 && handlePopoverOpen(e, eventsForDay, cellDate)}
+          onMouseLeave={handlePopoverClose}
+          sx={{
+            minHeight: { xs: 100, sm: 120, md: 140 }, // Increased minHeight
+            p: 1,
+            boxSizing: 'border-box',
+            bgcolor: eventsForDay.length > 0 ? '#e3f2fd' : '#0d47a1', // Lighter blue if events, else dark blue
+            color: eventsForDay.length > 0 ? 'primary.dark' : 'white',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start', // Align date to top
+            cursor: eventsForDay.length > 0 ? 'pointer' : 'default',
+            borderRadius: 1,
+            position: 'relative', // For absolute positioning of "more events"
+            overflow: 'hidden',
+            '&:hover': {
+              bgcolor: eventsForDay.length > 0 ? '#bbdefb' : '#1565c0',
+            },
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', alignSelf: 'flex-end', mb: 0.5 }}>
+            {day}
+          </Typography>
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', width: '100%' }}>
+            {eventsForDay.slice(0, 2).map(event => ( // Show max 2 events directly
+              <Typography
+                key={event.id}
+                variant="caption"
+                display="block"
+                sx={{
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  bgcolor: 'primary.main', // Or a specific event color
+                  color: 'primary.contrastText',
+                  p: '2px 4px',
+                  borderRadius: '4px',
+                  mb: '2px',
+                  fontSize: '0.65rem',
+                }}
+                onClick={() => onEditEvent?.(event)} // Allow clicking event in cell
+              >
+                {event.title}
+              </Typography>
+            ))}
+            {eventsForDay.length > 2 && (
+              <Typography variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', mt: 0.5, color: eventsForDay.length > 0 ? 'text.secondary' : 'grey.400' }}>
+                +{eventsForDay.length - 2} more
+              </Typography>
+            )}
+          </Box>
+        </Paper>
+      );
+    }
+    
+    const totalGridCells = Math.ceil((startDayOffset + daysInMonth) / 7) * 7;
+    const cellsToFill = Math.min(totalGridCells, 42);
+
+    while (cells.length < cellsToFill) {
+      cells.push(
+        <Paper
+          variant="outlined"
+          square
+          key={`empty-end-${cells.length}`}
+          sx={{
+            minHeight: { xs: 100, sm: 120, md: 140 },
+            p: 1,
+            boxSizing: 'border-box',
+            bgcolor: 'grey.50',
+            border: '1px solid transparent',
+          }}
+        />
+      );
+    }
 
     return (
-      <Box sx={{ p: { xs: 0.5, sm: 1 } }}> {/* Padding around the month view content */}
-        {/* Day of the week headers */}
+      <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
           {dayLabels.map(dayName => (
             <Typography
               key={dayName}
               variant="caption"
-              sx={{
-                textAlign: 'center',
-                p: { xs: 0.5, sm: 1 },
-                color: 'text.secondary',
-                fontWeight: 'medium',
-              }}
+              sx={{ textAlign: 'center', p: { xs: 0.5, sm: 1 }, color: 'text.secondary', fontWeight: 'medium' }}
             >
               {dayName}
             </Typography>
           ))}
         </Box>
-
-        {/* Days grid */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: { xs: 0.5, sm: 1 }, // Gap between cells
-            // border: '1px solid', // Optional: border around the whole grid
-            // borderColor: 'divider',
-            // bgcolor: 'grey.100', // Optional: background for the grid area if cells don't fill it
-          }}
-        >
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 } }}>
           {cells}
         </Box>
       </Box>
     );
   };
-
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -214,9 +230,9 @@ const Calendar: React.FC<CalendarProps> = ({
         elevation={3} 
         sx={{ 
           p: { xs: 2, md: 3 }, 
-          overflow: 'visible', // Changed from 'hidden' to allow shadows if any
-          flexGrow: 1, // Allows the paper to take available vertical space
-          m: { xs: 1, sm: 2, md: 3 } // Adds some margin around the calendar content
+          overflow: 'visible',
+          flexGrow: 1,
+          m: { xs: 1, sm: 2, md: 3 }
         }}
       >
         <Stack
@@ -228,7 +244,7 @@ const Calendar: React.FC<CalendarProps> = ({
         >
           {onAddEvent && (
             <Button 
-              variant="contained" // Changed from "default" to "contained" to use a valid MUI variant
+              variant="contained"
               onClick={onAddEvent} 
               className="w-full sm:w-auto"
             >
@@ -243,24 +259,13 @@ const Calendar: React.FC<CalendarProps> = ({
               aria-label="calendar view"
               size="small"
             >
-              <ToggleButton value="day" aria-label="day view">
-                Day
-              </ToggleButton>
-              <ToggleButton value="month" aria-label="month view">
-                Month
-              </ToggleButton>
+              <ToggleButton value="day" aria-label="day view">Day</ToggleButton>
+              <ToggleButton value="month" aria-label="month view">Month</ToggleButton>
             </ToggleButtonGroup>
             <Typography variant="h6" component="div" sx={{ textAlign: 'center', minWidth: '180px' }}>
               {view === 'day'
-                ? currentDate.toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : currentDate.toLocaleDateString('en-US', {
-                    month: 'long',
-                    year: 'numeric',
-                  })}
+                ? currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </Typography>
           </Stack>
         </Stack>
@@ -269,82 +274,38 @@ const Calendar: React.FC<CalendarProps> = ({
 
         {view === 'day' && (
           <Box sx={{ display: 'flex', overflowX: 'auto', pb: 2 }}>
-            {/* Time Column */}
             <Box sx={{ minWidth: '80px', pr: 1 }}>
-              <Box sx={{ height: '40px' /* Room header spacer */, mb: 1 }} /> {/* Spacer for room headers */}
+              <Box sx={{ height: '40px', mb: 1 }} />
               {timeSlots.map(time => (
-                <Box
-                  key={time}
-                  sx={{
-                    height: '60px', // Adjust height as needed
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    pr: 1,
-                    borderTop: '1px solid',
-                    borderColor: 'divider',
-                    '&:first-of-type': { borderTop: 'none' }
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    {time}
-                  </Typography>
+                <Box key={time} sx={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 1, borderTop: '1px solid', borderColor: 'divider', '&:first-of-type': { borderTop: 'none' } }}>
+                  <Typography variant="caption" color="text.secondary">{time}</Typography>
                 </Box>
               ))}
             </Box>
-
-            {/* Room Columns */}
             {rooms.map(room => (
               <Box key={room} sx={{ minWidth: '200px', flex: '1 1 0px', borderLeft: '1px solid', borderColor: 'divider' }}>
-                <Paper
-                  variant="outlined"
-                  square
-                  sx={{
-                    textAlign: 'center',
-                    p: 1,
-                    height: '40px',
-                    mb:1,
-                    bgcolor: 'grey.100',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
-                    {room}
-                  </Typography>
+                <Paper variant="outlined" square sx={{ textAlign: 'center', p: 1, height: '40px', mb:1, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>{room}</Typography>
                 </Paper>
-                <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` /* Total height of time slots */ }}>
+                <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` }}>
                   {events
-                    .filter(event => event.room === room) // Add date filter if necessary: && event.date === currentDate.toISOString().split('T')[0]
+                    .filter(event => event.room === room && event.date === currentDate.toISOString().split('T')[0]) // Ensure day view also filters by current date
                     .map(event => (
                       <Paper
                         elevation={2}
                         key={event.id}
                         sx={{
-                          position: 'absolute',
-                          left: '4px',
-                          right: '4px',
+                          position: 'absolute', left: '4px', right: '4px',
                           top: calculateEventPosition(event.startTime),
                           height: calculateEventHeight(event.startTime, event.endTime),
-                          bgcolor: 'primary.main',
-                          color: 'primary.contrastText',
-                          p: 1,
-                          borderRadius: 1,
-                          overflow: 'hidden',
-                          cursor: 'pointer',
-                          '&:hover': {
-                            bgcolor: 'primary.dark',
-                          },
+                          bgcolor: 'primary.main', color: 'primary.contrastText',
+                          p: 1, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
+                          '&:hover': { bgcolor: 'primary.dark' },
                         }}
                         onClick={() => onEditEvent?.(event)}
                       >
-                        <Typography variant="body2" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {event.title}
-                        </Typography>
-                        <Typography variant="caption" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {`${event.startTime} - ${event.endTime}`}
-                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</Typography>
+                        <Typography variant="caption" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${event.startTime} - ${event.endTime}`}</Typography>
                       </Paper>
                     ))}
                 </Box>
@@ -354,27 +315,75 @@ const Calendar: React.FC<CalendarProps> = ({
         )}
         {view === 'month' && renderMonthView()}
       </Paper>
-      {/* <SiteFooter /> */} {/* You can add this if you want a footer as well */}
+
+      {/* Popover for displaying events on a specific day */}
+      <Popover
+        id={popoverId}
+        open={openPopover}
+        anchorEl={popoverAnchorEl}
+        onClose={handlePopoverClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        PaperProps={{
+          onMouseEnter: () => { /* Keep popover open if mouse enters it */ },
+          onMouseLeave: handlePopoverClose, // Close if mouse leaves popover
+        }}
+      >
+        <Box sx={{ p: 2, minWidth: 250, maxWidth: 350 }}>
+          {popoverDate && (
+            <Typography variant="h6" gutterBottom>
+              Events for {popoverDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+            </Typography>
+          )}
+          <List dense>
+            {popoverEvents.map(event => (
+              <ListItem key={event.id} disablePadding>
+                <Link
+                  component="button"
+                  onClick={() => {
+                    onEditEvent?.(event);
+                    handlePopoverClose();
+                  }}
+                  sx={{ width: '100%', textAlign: 'left', p:0, textDecoration: 'none' }}
+                >
+                  <ListItemText
+                    primary={event.title}
+                    secondary={`${event.startTime} - ${event.endTime} (${event.room})`}
+                    primaryTypographyProps={{ sx: { fontWeight: 'medium' } }}
+                  />
+                </Link>
+              </ListItem>
+            ))}
+            {popoverEvents.length === 0 && (
+              <ListItemText primary="No events for this day." />
+            )}
+          </List>
+          {/* Optionally, add a button to create a new event for this day */}
+          {/* <Button size="small" onClick={() => { onAddEvent?.(popoverDate); handlePopoverClose(); }} sx={{mt: 1}}>
+            Add Event
+          </Button> */}
+        </Box>
+      </Popover>
     </Box>
   );
 };
 
-// Helper functions for positioning events (assuming 1px per minute, starting from 8 AM)
-// And each time slot visual height is 60px
 const calculateEventPosition = (startTime: string): string => {
   const [hours, minutes] = startTime.split(':').map(Number);
   const totalMinutesFrom8AM = (hours - 8) * 60 + minutes;
-  // Assuming each 60px slot represents an hour.
-  // If a slot is 60px high, then each minute is 1px.
   return `${totalMinutesFrom8AM}px`;
 };
 
 const calculateEventHeight = (startTime: string, endTime: string): string => {
   const [startHours, startMinutes] = startTime.split(':').map(Number);
   const [endHours, endMinutes] = endTime.split(':').map(Number);
-
-  const durationMinutes =
-    (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+  const durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
   return `${durationMinutes}px`;
 };
 
