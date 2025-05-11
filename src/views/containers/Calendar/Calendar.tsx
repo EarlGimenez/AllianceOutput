@@ -230,7 +230,7 @@ const Calendar: React.FC<CalendarProps> = ({
       {/* This Box provides the blue background for the main content area */}
       <Box sx={{ 
           flexGrow: 1, 
-          bgcolor: "#1e5393", // Your desired blue background color
+          bgcolor: "#D2E4FF", // Your desired blue background color
           p: { xs: 1, sm: 2, md: 3 } // Padding around the Paper, creates the blue "border"
       }}>
         <Paper 
