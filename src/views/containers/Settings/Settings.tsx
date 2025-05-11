@@ -15,27 +15,17 @@ const SettingsPage: React.FC = () => {
 
   return (
     <Box
-  sx={{
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    backgroundColor: 'gray.50',
-  }}
->
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        backgroundColor: 'gray.50',
+      }}
+    >
 
 
       <LandingNav />
-
-      <PageBanner
-        imageSrc="/office-banner.jpg"
-        imageAlt="Meeting Room"
-        header="BookIt"
-        subheader="Your Meeting Reservation Platform"
-        textAlign="center"
-      />
-
-
 
       <Container maxWidth="xl" className="flex flex-col lg:flex-row gap-6 py-10">
         {/* Sidebar */}
@@ -136,7 +126,14 @@ const SettingsPage: React.FC = () => {
           </Paper>
         </Box>
       </Container>
-            
+          
+      <PageBanner
+        imageSrc="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+        imageAlt="Meeting Room"
+        header="BookIt"
+        subheader="Your Meeting Reservation Platform"
+        textAlign="center"
+      />
 
       <SiteFooter />
     </Box>

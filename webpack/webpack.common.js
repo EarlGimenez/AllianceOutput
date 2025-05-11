@@ -11,16 +11,12 @@ module.exports = {
       {
         test: /\.(ts|js)x?$/,
         exclude: /node_modules/,
-        use: [
-          {
-            loader: 'babel-loader',
-          },
-        ],
+        use: ['babel-loader'],
       },
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader', 'postcss-loader'],
-      },      
+      },
       {
         test: /\.(?:ico|gif|png|jpg|jpeg)$/i,
         type: 'asset/resource',
@@ -34,14 +30,31 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, '..', './build'),
     filename: 'bundle.js',
+    publicPath: '/',
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, '..', './public/index.html'),
     }),
   ],
-  stats: 'errors-only',
   devServer: {
-    historyApiFallback: true
-  }
-}
+    historyApiFallback: {
+      index: '/',
+      disableDotRule: true,
+      rewrites: [
+        { from: /\/admin\/.*/, to: '/' }
+      ]
+    },
+    static: {
+      directory: path.join(__dirname, 'build'),
+      publicPath: '/',
+    },
+    hot: true,
+    compress: true,
+    port: 8080,
+    headers: {
+      "Content-Type": "text/javascript",
+    }
+  },
+  stats: 'errors-only',
+};

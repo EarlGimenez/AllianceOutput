@@ -1,58 +1,64 @@
-"use client"
-
-import type React from "react"
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { Box, Typography, TextField, Button, Paper, Container, Alert, Divider, useTheme } from "@mui/material"
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"
-import { LandingNav } from "../../../components/LandingNav"
-import { SiteFooter } from "../../../components/SiteFooter"
-import { PATHS } from "../../../../constant"
+"use client";
+import React from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  Button, 
+  Paper, 
+  Container, 
+  Alert, 
+  Divider, 
+  useTheme 
+} from "@mui/material";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import { LandingNav } from "../../../components/LandingNav";
+import { SiteFooter } from "../../../components/SiteFooter";
+import { PATHS } from "../../../../constant";
 
 const AdminLogin: React.FC = () => {
-  const theme = useTheme()
-  const navigate = useNavigate()
-  const [formData, setFormData] = useState({
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || PATHS.ADMIN_DASHBOARD.path;
+  
+  const [formData, setFormData] = React.useState({
     email: "",
     password: "",
-  })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  });
+  const [error, setError] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
       [name]: value,
-    })
-    // Clear error when user types
-    if (error) setError("")
-  }
+    }));
+    if (error) setError("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
-    // Simple validation
     if (!formData.email || !formData.password) {
-      setError("Please enter both email and password")
-      setLoading(false)
-      return
+      setError("Please enter both email and password");
+      setLoading(false);
+      return;
     }
 
-    // For development, accept any credentials with "admin" in the email
     if (formData.email.includes("admin")) {
-      // Simulate API call delay
       setTimeout(() => {
-        // In a real app, you would set auth tokens, etc.
-        localStorage.setItem("adminAuthenticated", "true")
-        navigate(PATHS.ADMIN_DASHBOARD.path)
-      }, 1000)
+        localStorage.setItem("adminAuthenticated", "true");
+        navigate(from, { replace: true });
+      }, 1000);
     } else {
-      setError("Invalid admin credentials")
-      setLoading(false)
+      setError("Invalid admin credentials");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
@@ -137,7 +143,6 @@ const AdminLogin: React.FC = () => {
             </Box>
           </Box>
 
-          {/* Development Note */}
           <Box sx={{ mt: 4, p: 2, bgcolor: "rgba(30, 83, 147, 0.1)", borderRadius: 1 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Development Mode
@@ -151,7 +156,7 @@ const AdminLogin: React.FC = () => {
 
       <SiteFooter />
     </Box>
-  )
-}
+  );
+};
 
-export default AdminLogin
+export default AdminLogin;

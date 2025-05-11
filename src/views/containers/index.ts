@@ -1,4 +1,4 @@
-export * from "./Main";
+// export * from "./Main";
 export { default as Homepage } from "./Homepage";
 export { default as About } from "./About"
 export { default as Contact } from "./Contact"
@@ -10,6 +10,7 @@ export * from "./UserDayView";
 export * from "./UserReservation";
 export { default as NotFound } from "./NotFound";
 export * from "./UserDashboard";
+export { default as Settings } from "./Settings";
 
 // Admin containers
 export { AdminLogin } from "./Admin/Login"
