@@ -1,6 +1,30 @@
 import React from 'react';
 import { CalendarEvent, Room } from './CalendarEvents';
-import Button from './Button';
+// import Button from './Button'; // Removed since Button component is no longer available
+
+// Simple Button component to replace the missing Button import
+interface SimpleButtonProps {
+  variant?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const CustomButton: React.FC<SimpleButtonProps> = ({ 
+  variant, 
+  onClick, 
+  children, 
+  className 
+}) => {
+  return (
+    <button 
+      onClick={onClick}
+      className={`custom-button ${variant === 'default' ? 'default' : ''} ${className || ''}`}
+    >
+      {children}
+    </button>
+  );
+};
 
 interface CalendarProps {
   events: CalendarEvent[];
@@ -36,12 +60,12 @@ const Calendar: React.FC<CalendarProps> = ({
     <div className="calendar-container">
       <header className="calendar-header">
         {onAddEvent && (
-          <Button 
+          <CustomButton 
             variant="default"
             onClick={onAddEvent}
           >
             + Create
-          </Button>
+          </CustomButton>
         )}
         <div className="date-navigator">
           <div className="current-date">

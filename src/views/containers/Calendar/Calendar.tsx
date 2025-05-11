@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  // Grid, // Grid is not used, so it can be removed
   Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
   Divider,
+  Button, // Import Button from MUI
 } from '@mui/material';
-import Button from '../../components/Button'; // Your custom Button
+// import Button from '../../components/Button'; // Your custom Button
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
-import { LandingNav } from '../../components/LandingNav'; // Import LandingNav
+import { LandingNav } from '../../components/LandingNav';
 // To potentially add a footer later, you might import:
 // import { SiteFooter } from '../../components/SiteFooter';
 
@@ -227,7 +227,11 @@ const Calendar: React.FC<CalendarProps> = ({
           sx={{ mb: 2 }}
         >
           {onAddEvent && (
-            <Button variant="default" onClick={onAddEvent} className="w-full sm:w-auto">
+            <Button 
+              variant="contained" // Changed from "default" to "contained" to use a valid MUI variant
+              onClick={onAddEvent} 
+              className="w-full sm:w-auto"
+            >
               + Create
             </Button>
           )}

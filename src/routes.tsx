@@ -41,6 +41,7 @@ export const AppRoutes = () => (
       {/* Public */}
       <Route index element={<Views.Homepage />} />
       <Route path={PATHS.HOMEPAGE.path} element={<Views.Homepage />} />
+      <Route path={PATHS.CALENDAR.path} element={<Views.Calendar />} />
       <Route path={PATHS.ABOUT.path} element={<Views.About />} />
       <Route path={PATHS.CONTACT.path} element={<Views.Contact />} />
       <Route path={PATHS.LOGIN.path} element={<Views.Login />} />
