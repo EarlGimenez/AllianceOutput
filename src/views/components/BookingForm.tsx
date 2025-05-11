@@ -20,7 +20,7 @@ interface BookingFormProps {
   rooms: Room[];
   onSubmit: (bookingData: Partial<CalendarEvent>) => void;
   onCancel: () => void;
-  initialData?: Partial<CalendarEvent>;
+  initialData?: Partial<CalendarEvent>; // Removed = {} default
   currentDate?: Date;
 }
 
@@ -58,33 +58,35 @@ const BookingForm: React.FC<BookingFormProps> = ({
   rooms,
   onSubmit,
   onCancel,
-  initialData = {},
+  initialData, // No default {} here
   currentDate,
 }) => {
-  const [title, setTitle] = useState(initialData.title || '');
-  const [date, setDate] = useState(formatDateForInput(initialData.date || currentDate));
-  const [startTime, setStartTime] = useState(formatTimeForInput(initialData.startTime) || '09:00');
-  const [endTime, setEndTime] = useState(formatTimeForInput(initialData.endTime) || '10:00');
-  const [selectedRoom, setSelectedRoom] = useState<string>(initialData.room || (rooms.length > 0 ? rooms[0] : ''));
-  const [description, setDescription] = useState(initialData.description || '');
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [date, setDate] = useState(formatDateForInput(initialData?.date || currentDate));
+  const [startTime, setStartTime] = useState(formatTimeForInput(initialData?.startTime) || '09:00');
+  const [endTime, setEndTime] = useState(formatTimeForInput(initialData?.endTime) || '10:00');
+  const [selectedRoom, setSelectedRoom] = useState<string>(initialData?.room || (rooms.length > 0 ? rooms[0] : ''));
+  const [description, setDescription] = useState(initialData?.description || '');
 
-  const [isRecurring, setIsRecurring] = useState(!!initialData.recurrenceRule);
+  const [isRecurring, setIsRecurring] = useState(!!initialData?.recurrenceRule);
   const [recurrenceType, setRecurrenceType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [weeklyDays, setWeeklyDays] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Effect for when the event to edit changes (initialData prop changes),
+  // or when the available rooms change (for default selection).
   useEffect(() => {
-    setTitle(initialData.title || '');
-    setDate(formatDateForInput(initialData.date || currentDate));
-    setStartTime(formatTimeForInput(initialData.startTime) || '09:00');
-    setEndTime(formatTimeForInput(initialData.endTime) || '10:00');
-    setSelectedRoom(initialData.room || (rooms.length > 0 ? rooms[0] : ''));
-    setDescription(initialData.description || '');
-    setErrors({});
+    setTitle(initialData?.title || '');
+    setStartTime(formatTimeForInput(initialData?.startTime) || '09:00');
+    setEndTime(formatTimeForInput(initialData?.endTime) || '10:00');
+    setSelectedRoom(initialData?.room || (rooms.length > 0 ? rooms[0] : ''));
+    setDescription(initialData?.description || '');
+    setErrors({}); // Clear errors when initial data changes
 
-    if (initialData.recurrenceRule) {
+    // Recurrence logic based on initialData
+    if (initialData?.recurrenceRule) {
       setIsRecurring(true);
       const rule = initialData.recurrenceRule;
       if (rule.includes('FREQ=DAILY')) setRecurrenceType('daily');
@@ -94,14 +96,16 @@ const BookingForm: React.FC<BookingFormProps> = ({
         if (byDayMatch && byDayMatch[1]) {
           setWeeklyDays(byDayMatch[1].split(','));
         } else {
-          setWeeklyDays([]);
+          setWeeklyDays([]); // Ensure weeklyDays is reset if not in rule
         }
       } else if (rule.includes('FREQ=MONTHLY')) setRecurrenceType('monthly');
-      else setRecurrenceType('none');
+      else setRecurrenceType('none'); // Default if FREQ is not DAILY, WEEKLY, or MONTHLY
 
       const untilMatch = rule.match(/UNTIL=([0-9T]+Z)/);
       if (untilMatch && untilMatch[1]) {
-        const untilDate = new Date(untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T.*/, '$1-$2-$3'));
+        // Ensure correct date parsing for UNTIL
+        const untilDateString = untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z');
+        const untilDate = new Date(untilDateString);
         setRecurrenceEndDate(formatDateForInput(untilDate));
       } else {
         setRecurrenceEndDate('');
@@ -112,7 +116,14 @@ const BookingForm: React.FC<BookingFormProps> = ({
       setRecurrenceEndDate('');
       setWeeklyDays([]);
     }
-  }, [initialData, currentDate, rooms]);
+  }, [initialData, rooms]);
+
+  // Effect specifically for the date field, reacting to initialData.date or the currentDate prop.
+  // This allows the date to update if `currentDate` prop changes for a new booking,
+  // without resetting other fields the user might be typing.
+  useEffect(() => {
+    setDate(formatDateForInput(initialData?.date || currentDate));
+  }, [initialData?.date, currentDate]);
 
   const validate = (): boolean => {
     const newErrors: { [key: string]: string } = {};
@@ -129,8 +140,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (isRecurring && recurrenceType !== 'none' && recurrenceEndDate && date && recurrenceEndDate < date) {
         newErrors.recurrenceEndDate = 'Recurrence end date cannot be before the start date.';
     }
-    if (isRecurring && recurrenceType === 'none') {
-        newErrors.recurrenceType = 'Please select a recurrence type.';
+    if (isRecurring && recurrenceType === 'none' && isRecurring) { // Check isRecurring as well
+        newErrors.recurrenceType = 'Please select a recurrence type if booking is recurring.';
     }
 
     setErrors(newErrors);
@@ -142,7 +153,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (!validate()) return;
 
     const bookingData: Partial<CalendarEvent> = {
-      id: initialData.id,
+      id: initialData?.id, // Use optional chaining
       title,
       date: date,
       startTime,
@@ -158,7 +169,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       }
       if (recurrenceEndDate) {
         const endDateObj = new Date(recurrenceEndDate);
-        endDateObj.setHours(23, 59, 59, 999);
+        endDateObj.setHours(23, 59, 59, 999); // Set to end of day
         const untilDateISO = endDateObj.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
         rrule += `;UNTIL=${untilDateISO}`;
       }
@@ -178,6 +189,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
       setWeeklyDays([]);
       setRecurrenceEndDate('');
     } else {
+      // If checking the box and no type is selected, default to daily
       if (recurrenceType === 'none') {
         setRecurrenceType('daily');
       }
@@ -188,11 +200,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setRecurrenceType(newType);
     if (errors.recurrenceType) setErrors(prev => ({...prev, recurrenceType: ''}));
     if (newType === 'none') {
+      // If "Does not repeat" is selected, uncheck the main recurring box
+      // but only if the user explicitly selected "none".
+      // If it was already "none" and they checked the box, it might have defaulted to "daily".
+      // This logic might need refinement based on desired UX. For now, if type is none, uncheck.
       setIsRecurring(false);
       setWeeklyDays([]);
       setRecurrenceEndDate('');
     } else {
-      setIsRecurring(true);
+      setIsRecurring(true); // Ensure main recurring box is checked if a type is selected
     }
   };
 
@@ -211,9 +227,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate sx={{ p: { xs: 1, sm: 2 } }}>
-      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-        {initialData.id ? 'Edit Booking' : 'Create Booking'}
-      </Typography>
+      {/* <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+        {initialData?.id ? 'Edit Booking' : 'Create Booking'}
+      </Typography> */}
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <TextField
@@ -267,7 +283,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             value={startTime}
             onChange={(e) => { setStartTime(e.target.value); if (errors.startTime) setErrors(prev => ({...prev, startTime: ''})); }}
             InputLabelProps={{ shrink: true }}
-            inputProps={{ step: 300 }}
+            inputProps={{ step: 300 }} // 5 minute steps
             error={!!errors.startTime}
             helperText={errors.startTime}
           />
@@ -282,7 +298,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             value={endTime}
             onChange={(e) => { setEndTime(e.target.value); if (errors.endTime) setErrors(prev => ({...prev, endTime: ''})); }}
             InputLabelProps={{ shrink: true }}
-            inputProps={{ step: 300 }}
+            inputProps={{ step: 300 }} // 5 minute steps
             error={!!errors.endTime}
             helperText={errors.endTime}
           />
@@ -378,7 +394,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
             Cancel
           </Button>
           <Button type="submit" variant="contained" color="primary">
-            {initialData.id ? 'Save Changes' : 'Create Booking'}
+            {initialData?.id ? 'Save Changes' : 'Create Booking'}
           </Button>
         </Grid>
       </Grid>

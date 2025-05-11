@@ -259,26 +259,57 @@ const Calendar: React.FC<CalendarProps> = ({
       const isCurrentSelectedDate = cellDate.toDateString() === currentDate.toDateString();
 
       const eventsForDay = events.filter(event => {
-        if (event.date === cellDateString && !event.recurrenceRule) {
+        const currentDisplayDate = cellDate; // Date object for the current cell
+
+        // Non-recurring event check
+        if (!event.recurrenceRule) {
+          return event.date === currentDisplayDate.toISOString().split('T')[0];
+        }
+
+        // Recurring event check
+        const eventSeriesStartDate = new Date(event.date);
+        eventSeriesStartDate.setHours(0, 0, 0, 0); // Start of the event's first day (local)
+
+        const currentDisplayDayStart = new Date(currentDisplayDate);
+        currentDisplayDayStart.setHours(0, 0, 0, 0); // Start of the day we are checking (local)
+
+        if (currentDisplayDayStart < eventSeriesStartDate) {
+          return false; // Not started yet
+        }
+
+        const untilMatch = event.recurrenceRule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+        if (untilMatch && untilMatch[1]) {
+          const untilDateString = untilMatch[1];
+          const recurrenceEndDateUtc = new Date(
+            untilDateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+          );
+          if (currentDisplayDayStart > recurrenceEndDateUtc) {
+            return false; // Current day is past the recurrence end date
+          }
+        }
+
+        // Check frequency rules
+        if (event.recurrenceRule.includes('FREQ=DAILY')) {
           return true;
         }
-        if (event.recurrenceRule && event.date <= cellDateString) {
-          const eventStartDate = new Date(event.date + 'T00:00:00');
-          if (event.recurrenceRule.includes('FREQ=DAILY')) {
-            return true;
-          }
-          if (event.recurrenceRule.includes('FREQ=WEEKLY')) {
-            const byDayMatch = event.recurrenceRule.match(/BYDAY=([A-Z,]+)/);
-            if (byDayMatch) {
-              const ruleDays = byDayMatch[1].split(',');
-              const cellDayOfWeek = dayLabelsShort[cellDate.getDay()].substring(0,2).toUpperCase();
-              if (ruleDays.includes(cellDayOfWeek) && cellDate >= eventStartDate) return true;
-            } else {
-                 if (cellDate.getDay() === eventStartDate.getDay() && cellDate >= eventStartDate) return true;
-            }
+
+        if (event.recurrenceRule.includes('FREQ=WEEKLY')) {
+          const byDayMatch = event.recurrenceRule.match(/BYDAY=([A-Z,]+)/);
+          const currentDayOfWeekShort = dayLabelsShort[currentDisplayDayStart.getDay()].substring(0, 2).toUpperCase();
+
+          if (byDayMatch && byDayMatch[1]) {
+            const ruleDays = byDayMatch[1].split(',');
+            return ruleDays.includes(currentDayOfWeekShort);
+          } else {
+            return currentDisplayDayStart.getDay() === eventSeriesStartDate.getDay();
           }
         }
-        return false;
+
+        if (event.recurrenceRule.includes('FREQ=MONTHLY')) {
+          return currentDisplayDayStart.getDate() === eventSeriesStartDate.getDate();
+        }
+        
+        return false; // Default for recurring if no specific rule matches for the day
       });
 
       cells.push(
@@ -461,28 +492,56 @@ const Calendar: React.FC<CalendarProps> = ({
                       {events
                         .filter(event => {
                             if (event.room !== room) return false;
-                            if (event.date === currentDate.toISOString().split('T')[0] && !event.recurrenceRule) {
-                                return true;
-                            }
-                            if (event.recurrenceRule && event.date <= currentDate.toISOString().split('T')[0]) {
-                                const eventStartDate = new Date(event.date + 'T00:00:00');
-                                const currentDisplayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+                            
+                            const currentDisplayDate = currentDate; // Effective current date for day view
 
-                                if (event.recurrenceRule.includes('FREQ=DAILY')) {
-                                    return currentDisplayDate >= eventStartDate;
-                                }
-                                if (event.recurrenceRule.includes('FREQ=WEEKLY')) {
-                                    const byDayMatch = event.recurrenceRule.match(/BYDAY=([A-Z,]+)/);
-                                    if (byDayMatch) {
-                                        const ruleDays = byDayMatch[1].split(',');
-                                        const currentDayOfWeek = dayLabelsShort[currentDisplayDate.getDay()].substring(0,2).toUpperCase();
-                                        return ruleDays.includes(currentDayOfWeek) && currentDisplayDate >= eventStartDate;
-                                    } else {
-                                        return currentDisplayDate.getDay() === eventStartDate.getDay() && currentDisplayDate >= eventStartDate;
-                                    }
-                                }
+                            // Non-recurring event check
+                            if (!event.recurrenceRule) {
+                              return event.date === currentDisplayDate.toISOString().split('T')[0];
                             }
-                            return false;
+
+                            // Recurring event check
+                            const eventSeriesStartDate = new Date(event.date);
+                            eventSeriesStartDate.setHours(0, 0, 0, 0); 
+
+                            const currentDisplayDayStart = new Date(currentDisplayDate);
+                            currentDisplayDayStart.setHours(0, 0, 0, 0);
+
+                            if (currentDisplayDayStart < eventSeriesStartDate) {
+                              return false; 
+                            }
+
+                            const untilMatch = event.recurrenceRule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+                            if (untilMatch && untilMatch[1]) {
+                              const untilDateString = untilMatch[1];
+                              const recurrenceEndDateUtc = new Date(
+                                untilDateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+                              );
+                              if (currentDisplayDayStart > recurrenceEndDateUtc) {
+                                return false;
+                              }
+                            }
+
+                            if (event.recurrenceRule.includes('FREQ=DAILY')) {
+                              return true;
+                            }
+
+                            if (event.recurrenceRule.includes('FREQ=WEEKLY')) {
+                              const byDayMatch = event.recurrenceRule.match(/BYDAY=([A-Z,]+)/);
+                              const currentDayOfWeekShort = dayLabelsShort[currentDisplayDayStart.getDay()].substring(0, 2).toUpperCase();
+                              if (byDayMatch && byDayMatch[1]) {
+                                const ruleDays = byDayMatch[1].split(',');
+                                return ruleDays.includes(currentDayOfWeekShort);
+                              } else {
+                                return currentDisplayDayStart.getDay() === eventSeriesStartDate.getDay();
+                              }
+                            }
+                            
+                            if (event.recurrenceRule.includes('FREQ=MONTHLY')) {
+                                return currentDisplayDayStart.getDate() === eventSeriesStartDate.getDate();
+                            }
+
+                            return false; 
                         })
                         .map(event => (
                           <Paper
