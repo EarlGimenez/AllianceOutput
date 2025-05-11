@@ -35,26 +35,17 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, '..', './public/index.html'),
+      inject: 'body',
     }),
   ],
+  
   devServer: {
-    historyApiFallback: {
-      index: '/',
-      disableDotRule: true,
-      rewrites: [
-        { from: /\/admin\/.*/, to: '/' }
-      ]
-    },
+    historyApiFallback: true, 
     static: {
-      directory: path.join(__dirname, 'build'),
-      publicPath: '/',
+      directory: path.resolve(__dirname, '..', 'public'),
     },
-    hot: true,
-    compress: true,
-    port: 8080,
-    headers: {
-      "Content-Type": "text/javascript",
-    }
+    port: 8080, 
+    open: true,
   },
   stats: 'errors-only',
 };
