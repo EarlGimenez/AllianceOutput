@@ -95,7 +95,7 @@ const SignUp: React.FC = () => {
               Sign Up
             </Button>
 
-            <Divider sx={{ my: 3 }}>
+            {/* <Divider sx={{ my: 3 }}>
               <Typography variant="body2" color="text.secondary">
                 OR
               </Typography>
@@ -117,7 +117,7 @@ const SignUp: React.FC = () => {
                   Apple
                 </Button>
               </Grid>
-            </Grid>
+            </Grid> */}
 
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2">

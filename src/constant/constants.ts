@@ -48,6 +48,10 @@ export const PATHS = {
     path: "/user-reservation",
     label: "User Reservation"
   },
+  USER_SETTINGS: {
+    path: "/user-settings",
+    label: "User Settings"
+  },
   ADMIN_LOGIN: {
     path: "/admin/login",
     name: "Admin Login",

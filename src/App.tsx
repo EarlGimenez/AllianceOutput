@@ -5,7 +5,13 @@ import { AppRoutes } from "./routes";
 
 const App = () => {
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box
+      sx={{
+      display: "flex",
+      flexDirection: "column",
+      minHeight: "100vh",
+      }}
+      >
       <AppRoutes />
     </Box>
   );
