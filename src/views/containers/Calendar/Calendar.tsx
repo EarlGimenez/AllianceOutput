@@ -1,5 +1,4 @@
-// ...existing code...
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -9,35 +8,43 @@ import {
   ToggleButtonGroup,
   Divider,
   Button,
-  Popover, // Import Popover
-  List,     // For listing events in Popover
+  Popover,
+  List,
   ListItem,
   ListItemText,
-  ListItemIcon,
   Link,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
-import EventNoteIcon from '@mui/icons-material/EventNote'; // Example icon for events
-// import Button from '../../components/Button'; // Your custom Button
+// import EventNoteIcon from '@mui/icons-material/EventNote'; // Example icon for events
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
 import { LandingNav } from '../../components/LandingNav';
+import BookingForm from '../../components/BookingForm';
 // To potentially add a footer later, you might import:
 // import { SiteFooter } from '../../components/SiteFooter';
 
 interface CalendarProps {
   events: CalendarEvent[];
-  onAddEvent?: () => void;
-  onEditEvent?: (event: CalendarEvent) => void;
+  onAddEvent?: (newEvent: Partial<CalendarEvent>) => void;
+  onEditEvent?: (updatedEvent: CalendarEvent) => void;
   onDeleteEvent?: (eventId: string) => void;
   currentDate: Date;
   onDateChange?: (date: Date) => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
-  events,
-  onAddEvent,
-  onEditEvent,
+  events: initialEvents,
+  onAddEvent: parentOnAddEvent,
+  onEditEvent: parentOnEditEvent,
   currentDate,
 }) => {
+  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
+
+  useEffect(() => {
+    setEvents(initialEvents);
+  }, [initialEvents]);
+
   const rooms: Room[] = [
     'Meeting Room',
     'School Classroom',
@@ -53,10 +60,13 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const [view, setView] = useState<'day' | 'month'>('day');
 
-  // State for Popover
   const [popoverAnchorEl, setPopoverAnchorEl] = useState<HTMLElement | null>(null);
   const [popoverEvents, setPopoverEvents] = useState<CalendarEvent[]>([]);
   const [popoverDate, setPopoverDate] = useState<Date | null>(null);
+
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
+  const [formDate, setFormDate] = useState<Date | undefined>(currentDate);
 
   const handlePopoverOpen = (
     event: React.MouseEvent<HTMLElement>,
@@ -70,10 +80,6 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const handlePopoverClose = () => {
     setPopoverAnchorEl(null);
-    // Optionally clear popoverEvents and popoverDate after a delay or on transition end
-    // For now, clear immediately for simplicity
-    // setPopoverEvents([]);
-    // setPopoverDate(null);
   };
 
   const openPopover = Boolean(popoverAnchorEl);
@@ -88,14 +94,56 @@ const Calendar: React.FC<CalendarProps> = ({
     }
   };
 
+  const handleOpenBookingForm = (eventToEdit?: CalendarEvent, dateForNew?: Date) => {
+    if (eventToEdit) {
+      setEditingEvent(eventToEdit);
+      setFormDate(undefined);
+    } else {
+      setEditingEvent(undefined);
+      setFormDate(dateForNew || currentDate);
+    }
+    setIsBookingFormOpen(true);
+  };
+
+  const handleCloseBookingForm = () => {
+    setIsBookingFormOpen(false);
+    setEditingEvent(undefined);
+    setFormDate(undefined);
+  };
+
+  const handleBookingSubmit = (bookingData: Partial<CalendarEvent>) => {
+    console.log('Booking submitted:', bookingData);
+    if (bookingData.id) {
+      if (parentOnEditEvent) {
+        parentOnEditEvent(bookingData as CalendarEvent);
+      } else {
+        setEvents(prevEvents => prevEvents.map(ev => ev.id === bookingData.id ? {...ev, ...bookingData} as CalendarEvent : ev));
+      }
+    } else {
+      const newEventWithId = { ...bookingData, id: Date.now().toString() } as CalendarEvent;
+      if (parentOnAddEvent) {
+        parentOnAddEvent(newEventWithId);
+      } else {
+        setEvents(prevEvents => [...prevEvents, newEventWithId]);
+      }
+    }
+    handleCloseBookingForm();
+  };
+
+  const handleCreateButtonClick = () => {
+    handleOpenBookingForm(undefined, currentDate);
+  };
+
+  const handleEventInteraction = (event: CalendarEvent) => {
+    handleOpenBookingForm(event);
+  };
+
   const renderMonthView = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-
     const firstDayOfMonth = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startDayOffset = firstDayOfMonth.getDay();
-
     const dayLabels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const cells = [];
 
@@ -106,7 +154,7 @@ const Calendar: React.FC<CalendarProps> = ({
           square
           key={`empty-start-${i}`}
           sx={{
-            minHeight: { xs: 100, sm: 120, md: 140 }, // Increased minHeight for event text
+            minHeight: { xs: 100, sm: 120, md: 140 },
             p: 1,
             boxSizing: 'border-box',
             bgcolor: 'grey.50',
@@ -118,9 +166,17 @@ const Calendar: React.FC<CalendarProps> = ({
 
     for (let day = 1; day <= daysInMonth; day++) {
       const cellDate = new Date(year, month, day);
-      const cellDateString = cellDate.toISOString().split('T')[0]; // YYYY-MM-DD for comparison
-
-      const eventsForDay = events.filter(event => event.date === cellDateString);
+      const cellDateString = cellDate.toISOString().split('T')[0];
+      const eventsForDay = events.filter(event => {
+        if (event.date === cellDateString && !event.recurrenceRule) {
+          return true;
+        }
+        if (event.recurrenceRule && event.date === cellDateString) {
+          // This is a simplification. Proper recurrence calculation (e.g. rrule.js) is needed here.
+          return true;
+        }
+        return false;
+      });
 
       cells.push(
         <Paper
@@ -132,17 +188,17 @@ const Calendar: React.FC<CalendarProps> = ({
           onMouseEnter={(e) => eventsForDay.length > 0 && handlePopoverOpen(e, eventsForDay, cellDate)}
           onMouseLeave={handlePopoverClose}
           sx={{
-            minHeight: { xs: 100, sm: 120, md: 140 }, // Increased minHeight
+            minHeight: { xs: 100, sm: 120, md: 140 },
             p: 1,
             boxSizing: 'border-box',
-            bgcolor: eventsForDay.length > 0 ? '#e3f2fd' : '#0d47a1', // Lighter blue if events, else dark blue
+            bgcolor: eventsForDay.length > 0 ? '#e3f2fd' : '#0d47a1',
             color: eventsForDay.length > 0 ? 'primary.dark' : 'white',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'flex-start', // Align date to top
+            justifyContent: 'flex-start',
             cursor: eventsForDay.length > 0 ? 'pointer' : 'default',
             borderRadius: 1,
-            position: 'relative', // For absolute positioning of "more events"
+            position: 'relative',
             overflow: 'hidden',
             '&:hover': {
               bgcolor: eventsForDay.length > 0 ? '#bbdefb' : '#1565c0',
@@ -153,7 +209,7 @@ const Calendar: React.FC<CalendarProps> = ({
             {day}
           </Typography>
           <Box sx={{ flexGrow: 1, overflowY: 'auto', width: '100%' }}>
-            {eventsForDay.slice(0, 2).map(event => ( // Show max 2 events directly
+            {eventsForDay.slice(0, 2).map(event => (
               <Typography
                 key={event.id}
                 variant="caption"
@@ -162,14 +218,15 @@ const Calendar: React.FC<CalendarProps> = ({
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  bgcolor: 'primary.main', // Or a specific event color
+                  bgcolor: 'primary.main',
                   color: 'primary.contrastText',
                   p: '2px 4px',
                   borderRadius: '4px',
                   mb: '2px',
                   fontSize: '0.65rem',
+                  cursor: 'pointer',
                 }}
-                onClick={() => onEditEvent?.(event)} // Allow clicking event in cell
+                onClick={() => handleEventInteraction(event)}
               >
                 {event.title}
               </Typography>
@@ -183,9 +240,9 @@ const Calendar: React.FC<CalendarProps> = ({
         </Paper>
       );
     }
-    
+
     const totalGridCells = Math.ceil((startDayOffset + daysInMonth) / 7) * 7;
-    const cellsToFill = Math.min(totalGridCells, 42);
+    const cellsToFill = Math.min(totalGridCells, 42); // Max 6 weeks
 
     while (cells.length < cellsToFill) {
       cells.push(
@@ -227,21 +284,19 @@ const Calendar: React.FC<CalendarProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <LandingNav />
-      {/* This Box provides the blue background for the main content area */}
-      <Box sx={{ 
-          flexGrow: 1, 
-          bgcolor: "#D2E4FF", // Your desired blue background color
-          p: { xs: 1, sm: 2, md: 3 } // Padding around the Paper, creates the blue "border"
+      <Box sx={{
+          flexGrow: 1,
+          bgcolor: "#D2E4FF",
+          p: { xs: 1, sm: 2, md: 3 }
       }}>
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            p: { xs: 2, md: 3 }, // Inner padding of the Paper
-            overflow: 'visible', 
-            // m: { xs: 1, sm: 2, md: 3 }, // Margin removed, parent Box padding handles spacing
-            height: '100%', // Make Paper fill the blue Box
-            display: 'flex', // Added to allow flexGrow on child
-            flexDirection: 'column' // Added to stack children vertically
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, md: 3 },
+            overflow: 'visible',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
           <Stack
@@ -251,15 +306,14 @@ const Calendar: React.FC<CalendarProps> = ({
             alignItems="center"
             sx={{ mb: 2 }}
           >
-            {onAddEvent && (
-              <Button 
-                variant="contained"
-                onClick={onAddEvent} 
-                className="w-full sm:w-auto"
-              >
-                + Create
-              </Button>
-            )}
+            <Button
+              variant="contained"
+              onClick={handleCreateButtonClick}
+              size="small" // Added to make the button smaller
+              sx={{ width: 'auto', minWidth: 'auto', px: 2 }} // Ensures width is based on content, less padding
+            >
+              + Create
+            </Button>
             <Stack direction="row" spacing={1} alignItems="center">
               <ToggleButtonGroup
                 value={view}
@@ -281,12 +335,11 @@ const Calendar: React.FC<CalendarProps> = ({
 
           <Divider sx={{ my: 2 }} />
 
-          {/* This Box will contain the scrollable calendar grid and take remaining space */}
           <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: view === 'day' ? 'auto' : 'hidden' }}>
             {view === 'day' && (
-              <Box sx={{ display: 'flex', pb: 2 /* Removed flexGrow from here */ }}>
+              <Box sx={{ display: 'flex', pb: 2 }}>
                 <Box sx={{ minWidth: '80px', pr: 1 }}>
-                  <Box sx={{ height: '40px', mb: 1 }} />
+                  <Box sx={{ height: '40px', mb: 1 }} /> {/* Spacer for room headers */}
                   {timeSlots.map(time => (
                     <Box key={time} sx={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 1, borderTop: '1px solid', borderColor: 'divider', '&:first-of-type': { borderTop: 'none' } }}>
                       <Typography variant="caption" color="text.secondary">{time}</Typography>
@@ -300,7 +353,17 @@ const Calendar: React.FC<CalendarProps> = ({
                     </Paper>
                     <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` }}>
                       {events
-                        .filter(event => event.room === room && event.date === currentDate.toISOString().split('T')[0]) // Ensure day view also filters by current date
+                        .filter(event => {
+                            if (event.room !== room) return false;
+                            if (event.date === currentDate.toISOString().split('T')[0] && !event.recurrenceRule) {
+                                return true;
+                            }
+                            if (event.recurrenceRule && event.date === currentDate.toISOString().split('T')[0]) {
+                                // This is a simplification. Proper recurrence calculation is needed here.
+                                return true;
+                            }
+                            return false;
+                        })
                         .map(event => (
                           <Paper
                             elevation={2}
@@ -313,7 +376,7 @@ const Calendar: React.FC<CalendarProps> = ({
                               p: 1, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
                               '&:hover': { bgcolor: 'primary.dark' },
                             }}
-                            onClick={() => onEditEvent?.(event)}
+                            onClick={() => handleEventInteraction(event)}
                           >
                             <Typography variant="body2" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</Typography>
                             <Typography variant="caption" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${event.startTime} - ${event.endTime}`}</Typography>
@@ -329,7 +392,6 @@ const Calendar: React.FC<CalendarProps> = ({
         </Paper>
       </Box>
 
-      {/* Popover for displaying events on a specific day */}
       <Popover
         id={popoverId}
         open={openPopover}
@@ -345,7 +407,7 @@ const Calendar: React.FC<CalendarProps> = ({
         }}
         PaperProps={{
           onMouseEnter: () => { /* Keep popover open if mouse enters it */ },
-          onMouseLeave: handlePopoverClose, // Close if mouse leaves popover
+          onMouseLeave: handlePopoverClose, // Close popover if mouse leaves it
         }}
       >
         <Box sx={{ p: 2, minWidth: 250, maxWidth: 350 }}>
@@ -360,10 +422,10 @@ const Calendar: React.FC<CalendarProps> = ({
                 <Link
                   component="button"
                   onClick={() => {
-                    onEditEvent?.(event);
+                    handleEventInteraction(event);
                     handlePopoverClose();
                   }}
-                  sx={{ width: '100%', textAlign: 'left', p:0, textDecoration: 'none' }}
+                  sx={{ width: '100%', textAlign: 'left', p:0, textDecoration: 'none', color: 'inherit', '&:hover': { backgroundColor: 'action.hover'}, padding: '8px' }}
                 >
                   <ListItemText
                     primary={event.title}
@@ -373,22 +435,30 @@ const Calendar: React.FC<CalendarProps> = ({
                 </Link>
               </ListItem>
             ))}
-            {popoverEvents.length === 0 && (
+            {popoverEvents.length === 0 && popoverDate && ( // Ensure popoverDate is also checked
               <ListItemText primary="No events for this day." />
             )}
           </List>
-          {/* Optionally, add a button to create a new event for this day */}
-          {/* <Button size="small" onClick={() => { onAddEvent?.(popoverDate); handlePopoverClose(); }} sx={{mt: 1}}>
-            Add Event
-          </Button> */}
         </Box>
       </Popover>
+
+      <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>{editingEvent?.id ? 'Edit Booking' : 'Create Booking'}</DialogTitle>
+        <DialogContent>
+          <BookingForm
+            rooms={rooms}
+            onSubmit={handleBookingSubmit}
+            onCancel={handleCloseBookingForm}
+            initialData={editingEvent}
+            currentDate={formDate}
+          />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
 
 const calculateEventPosition = (startTime: string): string => {
-// ...existing code...
   const [hours, minutes] = startTime.split(':').map(Number);
   const totalMinutesFrom8AM = (hours - 8) * 60 + minutes;
   return `${totalMinutesFrom8AM}px`;
