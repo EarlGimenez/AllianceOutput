@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { useState } from 'react';
 import {
   Box,
@@ -226,95 +227,107 @@ const Calendar: React.FC<CalendarProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <LandingNav />
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: { xs: 2, md: 3 }, 
-          overflow: 'visible',
-          flexGrow: 1,
-          m: { xs: 1, sm: 2, md: 3 }
-        }}
-      >
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ mb: 2 }}
+      {/* This Box provides the blue background for the main content area */}
+      <Box sx={{ 
+          flexGrow: 1, 
+          bgcolor: "#1e5393", // Your desired blue background color
+          p: { xs: 1, sm: 2, md: 3 } // Padding around the Paper, creates the blue "border"
+      }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: { xs: 2, md: 3 }, // Inner padding of the Paper
+            overflow: 'visible', 
+            // m: { xs: 1, sm: 2, md: 3 }, // Margin removed, parent Box padding handles spacing
+            height: '100%', // Make Paper fill the blue Box
+            display: 'flex', // Added to allow flexGrow on child
+            flexDirection: 'column' // Added to stack children vertically
+          }}
         >
-          {onAddEvent && (
-            <Button 
-              variant="contained"
-              onClick={onAddEvent} 
-              className="w-full sm:w-auto"
-            >
-              + Create
-            </Button>
-          )}
-          <Stack direction="row" spacing={1} alignItems="center">
-            <ToggleButtonGroup
-              value={view}
-              exclusive
-              onChange={handleViewChange}
-              aria-label="calendar view"
-              size="small"
-            >
-              <ToggleButton value="day" aria-label="day view">Day</ToggleButton>
-              <ToggleButton value="month" aria-label="month view">Month</ToggleButton>
-            </ToggleButtonGroup>
-            <Typography variant="h6" component="div" sx={{ textAlign: 'center', minWidth: '180px' }}>
-              {view === 'day'
-                ? currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </Typography>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 2 }}
+          >
+            {onAddEvent && (
+              <Button 
+                variant="contained"
+                onClick={onAddEvent} 
+                className="w-full sm:w-auto"
+              >
+                + Create
+              </Button>
+            )}
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ToggleButtonGroup
+                value={view}
+                exclusive
+                onChange={handleViewChange}
+                aria-label="calendar view"
+                size="small"
+              >
+                <ToggleButton value="day" aria-label="day view">Day</ToggleButton>
+                <ToggleButton value="month" aria-label="month view">Month</ToggleButton>
+              </ToggleButtonGroup>
+              <Typography variant="h6" component="div" sx={{ textAlign: 'center', minWidth: '180px' }}>
+                {view === 'day'
+                  ? currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                  : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </Typography>
+            </Stack>
           </Stack>
-        </Stack>
 
-        <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2 }} />
 
-        {view === 'day' && (
-          <Box sx={{ display: 'flex', overflowX: 'auto', pb: 2 }}>
-            <Box sx={{ minWidth: '80px', pr: 1 }}>
-              <Box sx={{ height: '40px', mb: 1 }} />
-              {timeSlots.map(time => (
-                <Box key={time} sx={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 1, borderTop: '1px solid', borderColor: 'divider', '&:first-of-type': { borderTop: 'none' } }}>
-                  <Typography variant="caption" color="text.secondary">{time}</Typography>
+          {/* This Box will contain the scrollable calendar grid and take remaining space */}
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: view === 'day' ? 'auto' : 'hidden' }}>
+            {view === 'day' && (
+              <Box sx={{ display: 'flex', pb: 2 /* Removed flexGrow from here */ }}>
+                <Box sx={{ minWidth: '80px', pr: 1 }}>
+                  <Box sx={{ height: '40px', mb: 1 }} />
+                  {timeSlots.map(time => (
+                    <Box key={time} sx={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 1, borderTop: '1px solid', borderColor: 'divider', '&:first-of-type': { borderTop: 'none' } }}>
+                      <Typography variant="caption" color="text.secondary">{time}</Typography>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-            </Box>
-            {rooms.map(room => (
-              <Box key={room} sx={{ minWidth: '200px', flex: '1 1 0px', borderLeft: '1px solid', borderColor: 'divider' }}>
-                <Paper variant="outlined" square sx={{ textAlign: 'center', p: 1, height: '40px', mb:1, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>{room}</Typography>
-                </Paper>
-                <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` }}>
-                  {events
-                    .filter(event => event.room === room && event.date === currentDate.toISOString().split('T')[0]) // Ensure day view also filters by current date
-                    .map(event => (
-                      <Paper
-                        elevation={2}
-                        key={event.id}
-                        sx={{
-                          position: 'absolute', left: '4px', right: '4px',
-                          top: calculateEventPosition(event.startTime),
-                          height: calculateEventHeight(event.startTime, event.endTime),
-                          bgcolor: 'primary.main', color: 'primary.contrastText',
-                          p: 1, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
-                          '&:hover': { bgcolor: 'primary.dark' },
-                        }}
-                        onClick={() => onEditEvent?.(event)}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</Typography>
-                        <Typography variant="caption" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${event.startTime} - ${event.endTime}`}</Typography>
-                      </Paper>
-                    ))}
-                </Box>
+                {rooms.map(room => (
+                  <Box key={room} sx={{ minWidth: '200px', flex: '1 1 0px', borderLeft: '1px solid', borderColor: 'divider' }}>
+                    <Paper variant="outlined" square sx={{ textAlign: 'center', p: 1, height: '40px', mb:1, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>{room}</Typography>
+                    </Paper>
+                    <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` }}>
+                      {events
+                        .filter(event => event.room === room && event.date === currentDate.toISOString().split('T')[0]) // Ensure day view also filters by current date
+                        .map(event => (
+                          <Paper
+                            elevation={2}
+                            key={event.id}
+                            sx={{
+                              position: 'absolute', left: '4px', right: '4px',
+                              top: calculateEventPosition(event.startTime),
+                              height: calculateEventHeight(event.startTime, event.endTime),
+                              bgcolor: 'primary.main', color: 'primary.contrastText',
+                              p: 1, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
+                              '&:hover': { bgcolor: 'primary.dark' },
+                            }}
+                            onClick={() => onEditEvent?.(event)}
+                          >
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</Typography>
+                            <Typography variant="caption" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${event.startTime} - ${event.endTime}`}</Typography>
+                          </Paper>
+                        ))}
+                    </Box>
+                  </Box>
+                ))}
               </Box>
-            ))}
+            )}
+            {view === 'month' && renderMonthView()}
           </Box>
-        )}
-        {view === 'month' && renderMonthView()}
-      </Paper>
+        </Paper>
+      </Box>
 
       {/* Popover for displaying events on a specific day */}
       <Popover
@@ -375,6 +388,7 @@ const Calendar: React.FC<CalendarProps> = ({
 };
 
 const calculateEventPosition = (startTime: string): string => {
+// ...existing code...
   const [hours, minutes] = startTime.split(':').map(Number);
   const totalMinutesFrom8AM = (hours - 8) * 60 + minutes;
   return `${totalMinutesFrom8AM}px`;
