@@ -24,6 +24,10 @@ export const PATHS = {
     path: "/recovery",
     label: "Recovery"
   },
+  SETTINGS: {
+    path: "/settings",
+    label: "Settings"
+  },
   LOGIN: {
     path: "/login",
     label: "Login"
@@ -75,6 +79,10 @@ export const PATHS = {
   ADMIN_USERS_CREATE: {
     path: "/admin/users/create",
     name: "Create User",
+  },
+  ADMIN_USERS_SETTINGS: {
+    path: "/admin/settings",
+    name: "User Settings",
   },
   ADMIN_USERS_EDIT: {
     path: "/admin/users/edit/:id",

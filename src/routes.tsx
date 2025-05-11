@@ -35,6 +35,7 @@ export const AppRoutes = () => {
         <Route path={PATHS.CONTACT.path} element={<Views.Contact />} />
         <Route path={PATHS.REGISTER.path} element={<Views.Register />} />
         <Route path={PATHS.RECOVERY.path} element={<Views.Recovery />} />
+        <Route path={PATHS.SETTINGS.path} element={<Views.Settings />} />
         <Route path={PATHS.LOGIN.path} element={<Views.Login />} />
         <Route path={PATHS.ADMIN_LOGIN.path} element={<Views.AdminLogin />} />
 
@@ -105,6 +106,14 @@ export const AppRoutes = () => {
           element={
             <AdminRoute>
               <Views.AdminUsersEdit />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path={PATHS.SETTINGS.path}
+          element={
+            <AdminRoute>
+              <Views.Settings />
             </AdminRoute>
           }
         />
