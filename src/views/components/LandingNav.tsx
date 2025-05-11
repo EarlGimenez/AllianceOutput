@@ -33,6 +33,7 @@ export const LandingNav: React.FC = () => {
 
   const navItems = [
     { name: "Home", path: PATHS.HOMEPAGE.path },
+    { name: "Calendar", path: PATHS.CALENDAR.path },
     { name: "Resources", path: PATHS.ABOUT.path },
     { name: "Contact", path: PATHS.CONTACT.path },
     { name: "Sign In", path: PATHS.LOGIN.path },
