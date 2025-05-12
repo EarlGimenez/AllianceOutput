@@ -12,6 +12,7 @@ export * from "./UserReservation";
 export { default as NotFound } from "./NotFound";
 export * from "./UserDashboard";
 export { default as Settings } from "./Settings";
+export { default as UserProfile } from "./UserProfile";
 
 // Admin containers
 export { AdminLogin } from "./Admin/Login"
