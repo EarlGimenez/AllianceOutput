@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom"
 import {
   Box,
   Button,
-  Container,
   Grid,
   Typography,
   Paper,
@@ -287,430 +286,434 @@ export const UserProfile: React.FC = () => {
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "#fff" }}>
       <LandingNav />
 
-      <Box component="main" sx={{ flexGrow: 1 }}>
-        <Container maxWidth="lg" sx={{ py: 3 }}>
-          <Grid container spacing={3}>
-            {/* Left sidebar */}
-            <Grid item xs={12} md={3} sx={{ borderRight: "1px solid #eee" }}>
-              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
-                <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: "#ccc" }} alt="John Doe">
-                  J
-                </Avatar>
-                <Typography variant="h5" component="h2" gutterBottom>
-                  John Doe
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  john.doe@example.com
-                </Typography>
-              </Box>
+      {/* Main layout with sidebar and content */}
+      <Box component="main" sx={{ flexGrow: 1, display: "flex", height: "calc(100vh - 64px)" }}>
+        {/* Left sidebar */}
+        <Box
+          sx={{
+            width: 300,
+            borderRight: "1px solid #eee",
+            height: "100%",
+            overflow: "auto",
+            p: 3,
+            display: { xs: "none", md: "block" },
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+            <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: "#ccc" }} alt="John Doe">
+              J
+            </Avatar>
+            <Typography variant="h5" component="h2" gutterBottom>
+              John Doe
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              john.doe@example.com
+            </Typography>
+          </Box>
 
-              <Typography variant="h6" component="h3" gutterBottom>
-                Upcoming Bookings
+          <Typography variant="h6" component="h3" gutterBottom>
+            Upcoming Bookings
+          </Typography>
+
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+              <IconButton size="small" onClick={goToPreviousMonth}>
+                <ChevronLeftIcon />
+              </IconButton>
+              <Typography variant="subtitle1">
+                {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               </Typography>
+              <IconButton size="small" onClick={goToNextMonth}>
+                <ChevronRightIcon />
+              </IconButton>
+            </Box>
 
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                  <IconButton size="small" onClick={goToPreviousMonth}>
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  <Typography variant="subtitle1">
-                    {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            <Grid container spacing={1}>
+              {weekdays.map((day) => (
+                <Grid item key={day} xs={12 / 7}>
+                  <Typography variant="caption" align="center" sx={{ display: "block", fontWeight: "medium" }}>
+                    {day}
                   </Typography>
-                  <IconButton size="small" onClick={goToNextMonth}>
-                    <ChevronRightIcon />
-                  </IconButton>
+                </Grid>
+              ))}
+
+              {calendarDays.map((day, index) => {
+                const isSelected = day.date.toDateString() === selectedDate.toDateString()
+                const hasBooking = bookings.some((booking) => booking.date.toDateString() === day.date.toDateString())
+
+                return (
+                  <Grid item key={index} xs={12 / 7}>
+                    <Box
+                      onClick={() => setSelectedDate(day.date)}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: 32,
+                        width: "100%",
+                        borderRadius: "50%",
+                        cursor: "pointer",
+                        backgroundColor: isSelected ? "#1e5393" : "transparent",
+                        color: isSelected ? "white" : hasBooking ? "#1e5393" : "inherit",
+                        "&:hover": {
+                          backgroundColor: isSelected ? "#1e5393" : "rgba(0, 0, 0, 0.04)",
+                        },
+                      }}
+                    >
+                      <Typography variant="body2">{day.dayOfMonth}</Typography>
+                    </Box>
+                  </Grid>
+                )
+              })}
+            </Grid>
+          </Box>
+
+          <Box sx={{ mt: "auto" }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              startIcon={<PersonIcon />}
+              onClick={() => console.log("Edit profile")}
+              sx={{
+                borderColor: "#1e5393",
+                color: "#1e5393",
+                "&:hover": {
+                  borderColor: "#1e5393",
+                  backgroundColor: "rgba(30, 83, 147, 0.04)",
+                },
+              }}
+            >
+              Edit Profile
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Main content */}
+        <Box sx={{ flexGrow: 1, p: 3, overflow: "auto", height: "100%" }}>
+          <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 500 }}>
+              My Bookings
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => console.log("Create booking")}
+              sx={{
+                backgroundColor: "#1e5393",
+                "&:hover": {
+                  backgroundColor: "#164279",
+                },
+              }}
+            >
+              Create Booking
+            </Button>
+          </Box>
+
+          <Box sx={{ p: 2, mb: 3, border: "1px solid #eee", borderRadius: 1 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Typography variant="h6">{formatDate(selectedDate)}</Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showAllBookings}
+                    onChange={(e) => setShowAllBookings(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label="Show all bookings"
+              />
+            </Box>
+          </Box>
+
+          <Box sx={{ width: "100%" }}>
+            <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                aria-label="booking view tabs"
+                sx={{
+                  "& .MuiTab-root": { color: "#1e5393", textTransform: "uppercase", fontWeight: 500 },
+                  "& .Mui-selected": { color: "#1e5393" },
+                  "& .MuiTabs-indicator": { backgroundColor: "#1e5393" },
+                }}
+              >
+                <Tab icon={<ViewListIcon sx={{ mr: 1 }} />} label="List View" {...a11yProps(0)} />
+                <Tab icon={<TableViewIcon sx={{ mr: 1 }} />} label="Table View" {...a11yProps(1)} />
+                <Tab icon={<EventIcon sx={{ mr: 1 }} />} label="Calendar View" {...a11yProps(2)} />
+              </Tabs>
+            </Box>
+
+            {/* List View */}
+            <TabPanel value={tabValue} index={0}>
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                  <PersonIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6">My Bookings</Typography>
                 </Box>
 
-                <Grid container spacing={1}>
-                  {weekdays.map((day) => (
-                    <Grid item key={day} xs={12 / 7}>
-                      <Typography variant="caption" align="center" sx={{ display: "block", fontWeight: "medium" }}>
-                        {day}
-                      </Typography>
-                    </Grid>
-                  ))}
-
-                  {calendarDays.map((day, index) => {
-                    const isSelected = day.date.toDateString() === selectedDate.toDateString()
-                    const hasBooking = bookings.some(
-                      (booking) => booking.date.toDateString() === day.date.toDateString(),
-                    )
-
-                    return (
-                      <Grid item key={index} xs={12 / 7}>
+                {filteredBookings.length > 0 ? (
+                  filteredBookings.map((booking) => (
+                    <Box
+                      key={booking.id}
+                      sx={{
+                        mb: 2,
+                        p: 3,
+                        borderRadius: 1,
+                        border: "1px solid #eee",
+                        "&:hover": {
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
                         <Box
-                          onClick={() => setSelectedDate(day.date)}
                           sx={{
                             display: "flex",
-                            justifyContent: "center",
                             alignItems: "center",
-                            height: 32,
-                            width: "100%",
-                            borderRadius: "50%",
-                            cursor: "pointer",
-                            backgroundColor: isSelected ? "#1e5393" : "transparent",
-                            color: isSelected ? "white" : hasBooking ? "#1e5393" : "inherit",
-                            "&:hover": {
-                              backgroundColor: isSelected ? "#1e5393" : "rgba(0, 0, 0, 0.04)",
-                            },
-                          }}
-                        >
-                          <Typography variant="body2">{day.dayOfMonth}</Typography>
-                        </Box>
-                      </Grid>
-                    )
-                  })}
-                </Grid>
-              </Box>
-
-              <Box sx={{ mt: "auto" }}>
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  startIcon={<PersonIcon />}
-                  onClick={() => console.log("Edit profile")}
-                  sx={{
-                    borderColor: "#1e5393",
-                    color: "#1e5393",
-                    "&:hover": {
-                      borderColor: "#1e5393",
-                      backgroundColor: "rgba(30, 83, 147, 0.04)",
-                    },
-                  }}
-                >
-                  Edit Profile
-                </Button>
-              </Box>
-            </Grid>
-
-            {/* Main content */}
-            <Grid item xs={12} md={9}>
-              <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="h4" component="h1" sx={{ fontWeight: 500 }}>
-                  My Bookings
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => console.log("Create booking")}
-                  sx={{
-                    backgroundColor: "#1e5393",
-                    "&:hover": {
-                      backgroundColor: "#164279",
-                    },
-                  }}
-                >
-                  Create Booking
-                </Button>
-              </Box>
-
-              <Box sx={{ p: 2, mb: 3, border: "1px solid #eee", borderRadius: 1 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Typography variant="h6">{formatDate(selectedDate)}</Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={showAllBookings}
-                        onChange={(e) => setShowAllBookings(e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label="Show all bookings"
-                  />
-                </Box>
-              </Box>
-
-              <Box sx={{ width: "100%" }}>
-                <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                  <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    aria-label="booking view tabs"
-                    sx={{
-                      "& .MuiTab-root": { color: "#1e5393", textTransform: "uppercase", fontWeight: 500 },
-                      "& .Mui-selected": { color: "#1e5393" },
-                      "& .MuiTabs-indicator": { backgroundColor: "#1e5393" },
-                    }}
-                  >
-                    <Tab icon={<ViewListIcon sx={{ mr: 1 }} />} label="List View" {...a11yProps(0)} />
-                    <Tab icon={<TableViewIcon sx={{ mr: 1 }} />} label="Table View" {...a11yProps(1)} />
-                    <Tab icon={<EventIcon sx={{ mr: 1 }} />} label="Calendar View" {...a11yProps(2)} />
-                  </Tabs>
-                </Box>
-
-                {/* List View */}
-                <TabPanel value={tabValue} index={0}>
-                  <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                      <PersonIcon sx={{ mr: 1 }} />
-                      <Typography variant="h6">My Bookings</Typography>
-                    </Box>
-
-                    {filteredBookings.length > 0 ? (
-                      filteredBookings.map((booking) => (
-                        <Box
-                          key={booking.id}
-                          sx={{
-                            mb: 2,
-                            p: 3,
+                            justifyContent: "center",
+                            width: 48,
+                            height: 48,
                             borderRadius: 1,
-                            border: "1px solid #eee",
-                            "&:hover": {
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                            },
+                            mr: 2,
+                            backgroundColor: getBackgroundColorForBooking(booking.color),
                           }}
                         >
-                          <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: 48,
-                                height: 48,
-                                borderRadius: 1,
-                                mr: 2,
-                                backgroundColor: getBackgroundColorForBooking(booking.color),
-                              }}
-                            >
-                              <CalendarMonthIcon sx={{ color: getColorForBooking(booking.color) }} />
-                            </Box>
-
-                            <Box sx={{ flexGrow: 1 }}>
-                              <Typography variant="h6" component="h3">
-                                {booking.room}
-                              </Typography>
-                              <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-                                <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
-                                <Typography variant="body2" color="text.secondary">
-                                  {booking.startTime} - {booking.endTime}
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-                                <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
-                                <Typography variant="body2" color="text.secondary">
-                                  {booking.location}
-                                </Typography>
-                              </Box>
-                              {showAllBookings && (
-                                <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-                                  <CalendarMonthIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {formatShortDate(booking.date)}
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Box>
-
-                            <Box>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<EditIcon />}
-                                onClick={() => handleEdit(booking)}
-                                sx={{
-                                  mr: 1,
-                                  borderColor: "#1e5393",
-                                  color: "#1e5393",
-                                  "&:hover": {
-                                    borderColor: "#1e5393",
-                                    backgroundColor: "rgba(30, 83, 147, 0.04)",
-                                  },
-                                }}
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                size="small"
-                                startIcon={<DeleteIcon />}
-                                onClick={() => handleCancel(booking)}
-                              >
-                                Cancel
-                              </Button>
-                            </Box>
-                          </Box>
+                          <CalendarMonthIcon sx={{ color: getColorForBooking(booking.color) }} />
                         </Box>
-                      ))
-                    ) : (
-                      <Typography variant="body1" sx={{ textAlign: "center", py: 4 }}>
-                        No bookings found for the selected date.
-                      </Typography>
-                    )}
-                  </Box>
-                </TabPanel>
 
-                {/* Table View */}
-                <TabPanel value={tabValue} index={1}>
-                  <TableContainer>
-                    <Table sx={{ minWidth: 650 }} aria-label="bookings table">
-                      <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
-                        <TableRow>
-                          <TableCell>Room</TableCell>
-                          <TableCell>Date</TableCell>
-                          <TableCell>Time</TableCell>
-                          <TableCell>Location</TableCell>
-                          <TableCell align="right">Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {filteredBookings.length > 0 ? (
-                          filteredBookings.map((booking) => (
-                            <TableRow key={booking.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                              <TableCell component="th" scope="row">
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                  <Box
-                                    sx={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: "50%",
-                                      backgroundColor: getColorForBooking(booking.color),
-                                      mr: 1,
-                                    }}
-                                  />
-                                  {booking.room}
-                                </Box>
-                              </TableCell>
-                              <TableCell>{formatShortDate(booking.date)}</TableCell>
-                              <TableCell>{`${booking.startTime} - ${booking.endTime}`}</TableCell>
-                              <TableCell>{booking.location}</TableCell>
-                              <TableCell align="right">
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<EditIcon />}
-                                  onClick={() => handleEdit(booking)}
-                                  sx={{
-                                    mr: 1,
-                                    borderColor: "#1e5393",
-                                    color: "#1e5393",
-                                    "&:hover": {
-                                      borderColor: "#1e5393",
-                                      backgroundColor: "rgba(30, 83, 147, 0.04)",
-                                    },
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  size="small"
-                                  startIcon={<DeleteIcon />}
-                                  onClick={() => handleCancel(booking)}
-                                >
-                                  Cancel
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} sx={{ textAlign: "center", py: 3 }}>
-                              No bookings found for the selected date.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </TabPanel>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="h6" component="h3">
+                            {booking.room}
+                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                            <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {booking.startTime} - {booking.endTime}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                            <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
+                            <Typography variant="body2" color="text.secondary">
+                              {booking.location}
+                            </Typography>
+                          </Box>
+                          {showAllBookings && (
+                            <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                              <CalendarMonthIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
+                              <Typography variant="body2" color="text.secondary">
+                                {formatShortDate(booking.date)}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
 
-                {/* Calendar View */}
-                <TabPanel value={tabValue} index={2}>
-                  <Paper sx={{ p: 2, mb: 3, border: "1px solid #eee", boxShadow: "none" }}>
-                    <Grid container>
-                      <Grid item xs={2} sx={{ borderRight: "1px solid #eee", backgroundColor: "#f5f5f5" }}>
-                        <Typography variant="subtitle2" sx={{ p: 1, textAlign: "center", fontWeight: "bold" }}>
-                          Time
-                        </Typography>
-                        {timeSlots.map((slot, index) => (
-                          <Box
-                            key={index}
+                        <Box>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<EditIcon />}
+                            onClick={() => handleEdit(booking)}
                             sx={{
-                              p: 1,
-                              height: 80,
-                              borderTop: "1px solid #eee",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                              mr: 1,
+                              borderColor: "#1e5393",
+                              color: "#1e5393",
+                              "&:hover": {
+                                borderColor: "#1e5393",
+                                backgroundColor: "rgba(30, 83, 147, 0.04)",
+                              },
                             }}
                           >
-                            <Typography variant="body2">{slot}</Typography>
-                          </Box>
-                        ))}
-                      </Grid>
-                      <Grid item xs={10}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ p: 1, textAlign: "center", fontWeight: "bold", backgroundColor: "#f5f5f5" }}
-                        >
-                          {formatShortDate(selectedDate)}
-                        </Typography>
-                        {timeSlots.map((slot, index) => {
-                          const slotBookings = getBookingsForTimeSlot(slot)
-                          return (
-                            <Box
-                              key={index}
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleCancel(booking)}
+                          >
+                            Cancel
+                          </Button>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="body1" sx={{ textAlign: "center", py: 4 }}>
+                    No bookings found for the selected date.
+                  </Typography>
+                )}
+              </Box>
+            </TabPanel>
+
+            {/* Table View */}
+            <TabPanel value={tabValue} index={1}>
+              <TableContainer>
+                <Table sx={{ minWidth: 650 }} aria-label="bookings table">
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
+                    <TableRow>
+                      <TableCell>Room</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Time</TableCell>
+                      <TableCell>Location</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredBookings.length > 0 ? (
+                      filteredBookings.map((booking) => (
+                        <TableRow key={booking.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                          <TableCell component="th" scope="row">
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              <Box
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: getColorForBooking(booking.color),
+                                  mr: 1,
+                                }}
+                              />
+                              {booking.room}
+                            </Box>
+                          </TableCell>
+                          <TableCell>{formatShortDate(booking.date)}</TableCell>
+                          <TableCell>{`${booking.startTime} - ${booking.endTime}`}</TableCell>
+                          <TableCell>{booking.location}</TableCell>
+                          <TableCell align="right">
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<EditIcon />}
+                              onClick={() => handleEdit(booking)}
                               sx={{
-                                p: 1,
-                                height: 80,
-                                borderTop: "1px solid #eee",
-                                borderLeft: "1px solid #eee",
-                                position: "relative",
+                                mr: 1,
+                                borderColor: "#1e5393",
+                                color: "#1e5393",
+                                "&:hover": {
+                                  borderColor: "#1e5393",
+                                  backgroundColor: "rgba(30, 83, 147, 0.04)",
+                                },
                               }}
                             >
-                              {slotBookings.length > 0
-                                ? slotBookings.map((booking) => (
-                                    <Paper
-                                      key={booking.id}
-                                      sx={{
-                                        p: 1,
-                                        backgroundColor: getBackgroundColorForBooking(booking.color),
-                                        color: getColorForBooking(booking.color),
-                                        height: "90%",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        justifyContent: "space-between",
-                                        position: "relative",
-                                        overflow: "hidden",
-                                        boxShadow: "none",
-                                        border: `1px solid ${getColorForBooking(booking.color)}`,
-                                      }}
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              startIcon={<DeleteIcon />}
+                              onClick={() => handleCancel(booking)}
+                            >
+                              Cancel
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} sx={{ textAlign: "center", py: 3 }}>
+                          No bookings found for the selected date.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </TabPanel>
+
+            {/* Calendar View */}
+            <TabPanel value={tabValue} index={2}>
+              <Paper sx={{ p: 2, mb: 3, border: "1px solid #eee", boxShadow: "none" }}>
+                <Grid container>
+                  <Grid item xs={2} sx={{ borderRight: "1px solid #eee", backgroundColor: "#f5f5f5" }}>
+                    <Typography variant="subtitle2" sx={{ p: 1, textAlign: "center", fontWeight: "bold" }}>
+                      Time
+                    </Typography>
+                    {timeSlots.map((slot, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 1,
+                          height: 80,
+                          borderTop: "1px solid #eee",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Typography variant="body2">{slot}</Typography>
+                      </Box>
+                    ))}
+                  </Grid>
+                  <Grid item xs={10}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ p: 1, textAlign: "center", fontWeight: "bold", backgroundColor: "#f5f5f5" }}
+                    >
+                      {formatShortDate(selectedDate)}
+                    </Typography>
+                    {timeSlots.map((slot, index) => {
+                      const slotBookings = getBookingsForTimeSlot(slot)
+                      return (
+                        <Box
+                          key={index}
+                          sx={{
+                            p: 1,
+                            height: 80,
+                            borderTop: "1px solid #eee",
+                            borderLeft: "1px solid #eee",
+                            position: "relative",
+                          }}
+                        >
+                          {slotBookings.length > 0
+                            ? slotBookings.map((booking) => (
+                                <Paper
+                                  key={booking.id}
+                                  sx={{
+                                    p: 1,
+                                    backgroundColor: getBackgroundColorForBooking(booking.color),
+                                    color: getColorForBooking(booking.color),
+                                    height: "90%",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "space-between",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                    boxShadow: "none",
+                                    border: `1px solid ${getColorForBooking(booking.color)}`,
+                                  }}
+                                >
+                                  <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                                    {booking.room}
+                                  </Typography>
+                                  <Typography variant="caption">
+                                    {booking.startTime} - {booking.endTime}
+                                  </Typography>
+                                  <Box sx={{ position: "absolute", right: 4, top: 4 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleEdit(booking)}
+                                      sx={{ p: 0.5, mr: 0.5 }}
                                     >
-                                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                                        {booking.room}
-                                      </Typography>
-                                      <Typography variant="caption">
-                                        {booking.startTime} - {booking.endTime}
-                                      </Typography>
-                                      <Box sx={{ position: "absolute", right: 4, top: 4 }}>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleEdit(booking)}
-                                          sx={{ p: 0.5, mr: 0.5 }}
-                                        >
-                                          <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" onClick={() => handleCancel(booking)} sx={{ p: 0.5 }}>
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </Box>
-                                    </Paper>
-                                  ))
-                                : null}
-                            </Box>
-                          )
-                        })}
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                </TabPanel>
-              </Box>
-            </Grid>
-          </Grid>
-        </Container>
+                                      <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton size="small" onClick={() => handleCancel(booking)} sx={{ p: 0.5 }}>
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                </Paper>
+                              ))
+                            : null}
+                        </Box>
+                      )
+                    })}
+                  </Grid>
+                </Grid>
+              </Paper>
+            </TabPanel>
+          </Box>
+        </Box>
       </Box>
 
       {/* Edit Booking Dialog */}
