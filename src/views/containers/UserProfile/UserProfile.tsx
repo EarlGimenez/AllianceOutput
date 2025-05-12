@@ -16,8 +16,6 @@ import {
   IconButton,
   useTheme,
   useMediaQuery,
-  Card,
-  CardContent,
   Tabs,
   Tab,
   Table,
@@ -79,7 +77,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`booking-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
     </div>
   )
 }
@@ -130,24 +128,6 @@ export const UserProfile: React.FC = () => {
       endTime: "6:00 PM",
       location: "Main Building",
       date: new Date(2025, 4, 5),
-      color: "secondary",
-    },
-    {
-      id: "4",
-      room: "Conference Room B",
-      startTime: "9:00 AM",
-      endTime: "10:30 AM",
-      location: "Building 1, Floor 3",
-      date: new Date(2025, 4, 6),
-      color: "primary",
-    },
-    {
-      id: "5",
-      room: "Board Room",
-      startTime: "1:00 PM",
-      endTime: "3:00 PM",
-      location: "Executive Building, Floor 5",
-      date: new Date(2025, 4, 7),
       color: "secondary",
     },
   ])
@@ -262,26 +242,26 @@ export const UserProfile: React.FC = () => {
   const getColorForBooking = (color: string) => {
     switch (color) {
       case "primary":
-        return theme.palette.primary.main
+        return "#1e88e5" // blue
       case "secondary":
-        return theme.palette.secondary.main
+        return "#9c27b0" // purple
       case "success":
-        return theme.palette.success.main
+        return "#4caf50" // green
       default:
-        return theme.palette.primary.main
+        return "#1e88e5" // default blue
     }
   }
 
   const getBackgroundColorForBooking = (color: string) => {
     switch (color) {
       case "primary":
-        return theme.palette.primary.light
+        return "#bbdefb" // light blue
       case "secondary":
-        return theme.palette.secondary.light
+        return "#e1bee7" // light purple
       case "success":
-        return theme.palette.success.light
+        return "#c8e6c9" // light green
       default:
-        return theme.palette.primary.light
+        return "#bbdefb" // default light blue
     }
   }
 
@@ -304,120 +284,127 @@ export const UserProfile: React.FC = () => {
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "#fff" }}>
       <LandingNav />
 
-      <Box component="main" sx={{ flexGrow: 1, py: 4 }}>
-        <Container maxWidth="lg">
+      <Box component="main" sx={{ flexGrow: 1 }}>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
           <Grid container spacing={3}>
             {/* Left sidebar */}
-            {!isMobile && (
-              <Grid item xs={12} md={3}>
-                <Paper sx={{ p: 3, height: "100%" }}>
-                  <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
-                    <Avatar
-                      sx={{ width: 120, height: 120, mb: 2 }}
-                      alt="John Doe"
-                      src="/placeholder.svg?height=120&width=120"
-                    />
-                    <Typography variant="h5" component="h2" gutterBottom>
-                      John Doe
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      john.doe@example.com
-                    </Typography>
-                  </Box>
+            <Grid item xs={12} md={3} sx={{ borderRight: "1px solid #eee" }}>
+              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
+                <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: "#ccc" }} alt="John Doe">
+                  J
+                </Avatar>
+                <Typography variant="h5" component="h2" gutterBottom>
+                  John Doe
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  john.doe@example.com
+                </Typography>
+              </Box>
 
-                  <Typography variant="h6" component="h3" gutterBottom>
-                    Upcoming Bookings
+              <Typography variant="h6" component="h3" gutterBottom>
+                Upcoming Bookings
+              </Typography>
+
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                  <IconButton size="small" onClick={goToPreviousMonth}>
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <Typography variant="subtitle1">
+                    {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </Typography>
+                  <IconButton size="small" onClick={goToNextMonth}>
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Box>
 
-                  <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                      <IconButton size="small" onClick={goToPreviousMonth}>
-                        <ChevronLeftIcon />
-                      </IconButton>
-                      <Typography variant="subtitle1">
-                        {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                <Grid container spacing={1}>
+                  {weekdays.map((day) => (
+                    <Grid item key={day} xs={12 / 7}>
+                      <Typography variant="caption" align="center" sx={{ display: "block", fontWeight: "medium" }}>
+                        {day}
                       </Typography>
-                      <IconButton size="small" onClick={goToNextMonth}>
-                        <ChevronRightIcon />
-                      </IconButton>
-                    </Box>
-
-                    <Grid container spacing={1}>
-                      {weekdays.map((day) => (
-                        <Grid item key={day} xs={12 / 7}>
-                          <Typography variant="caption" align="center" sx={{ display: "block", fontWeight: "medium" }}>
-                            {day}
-                          </Typography>
-                        </Grid>
-                      ))}
-
-                      {calendarDays.map((day, index) => {
-                        const isSelected = day.date.toDateString() === selectedDate.toDateString()
-                        const hasBooking = bookings.some(
-                          (booking) => booking.date.toDateString() === day.date.toDateString(),
-                        )
-
-                        return (
-                          <Grid item key={index} xs={12 / 7}>
-                            <Box
-                              onClick={() => setSelectedDate(day.date)}
-                              sx={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                height: 32,
-                                width: "100%",
-                                borderRadius: "50%",
-                                cursor: "pointer",
-                                backgroundColor: isSelected ? "#1e5393" : "transparent",
-                                color: isSelected ? "white" : hasBooking ? "#1e5393" : "inherit",
-                                "&:hover": {
-                                  backgroundColor: isSelected ? "#1e5393" : "rgba(0, 0, 0, 0.04)",
-                                },
-                              }}
-                            >
-                              <Typography variant="body2">{day.dayOfMonth}</Typography>
-                            </Box>
-                          </Grid>
-                        )
-                      })}
                     </Grid>
-                  </Box>
+                  ))}
 
-                  <Box sx={{ mt: "auto" }}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<PersonIcon />}
-                      onClick={() => console.log("Edit profile")}
-                    >
-                      Edit Profile
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
-            )}
+                  {calendarDays.map((day, index) => {
+                    const isSelected = day.date.toDateString() === selectedDate.toDateString()
+                    const hasBooking = bookings.some(
+                      (booking) => booking.date.toDateString() === day.date.toDateString(),
+                    )
+
+                    return (
+                      <Grid item key={index} xs={12 / 7}>
+                        <Box
+                          onClick={() => setSelectedDate(day.date)}
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            height: 32,
+                            width: "100%",
+                            borderRadius: "50%",
+                            cursor: "pointer",
+                            backgroundColor: isSelected ? "#1e5393" : "transparent",
+                            color: isSelected ? "white" : hasBooking ? "#1e5393" : "inherit",
+                            "&:hover": {
+                              backgroundColor: isSelected ? "#1e5393" : "rgba(0, 0, 0, 0.04)",
+                            },
+                          }}
+                        >
+                          <Typography variant="body2">{day.dayOfMonth}</Typography>
+                        </Box>
+                      </Grid>
+                    )
+                  })}
+                </Grid>
+              </Box>
+
+              <Box sx={{ mt: "auto" }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<PersonIcon />}
+                  onClick={() => console.log("Edit profile")}
+                  sx={{
+                    borderColor: "#1e5393",
+                    color: "#1e5393",
+                    "&:hover": {
+                      borderColor: "#1e5393",
+                      backgroundColor: "rgba(30, 83, 147, 0.04)",
+                    },
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              </Box>
+            </Grid>
 
             {/* Main content */}
             <Grid item xs={12} md={9}>
               <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="h4" component="h1">
+                <Typography variant="h4" component="h1" sx={{ fontWeight: 500 }}>
                   My Bookings
                 </Typography>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={() => console.log("Create booking")}
-                  sx={{ backgroundColor: "#1e5393" }}
+                  sx={{
+                    backgroundColor: "#1e5393",
+                    "&:hover": {
+                      backgroundColor: "#164279",
+                    },
+                  }}
                 >
                   Create Booking
                 </Button>
               </Box>
 
-              <Paper sx={{ p: 3, mb: 4 }}>
+              <Box sx={{ p: 2, mb: 3, border: "1px solid #eee", borderRadius: 1 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography variant="h6">{formatDate(selectedDate)}</Typography>
                   <FormControlLabel
@@ -431,7 +418,7 @@ export const UserProfile: React.FC = () => {
                     label="Show all bookings"
                   />
                 </Box>
-              </Paper>
+              </Box>
 
               <Box sx={{ width: "100%" }}>
                 <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -439,11 +426,15 @@ export const UserProfile: React.FC = () => {
                     value={tabValue}
                     onChange={handleTabChange}
                     aria-label="booking view tabs"
-                    sx={{ "& .MuiTab-root": { color: "#1e5393" }, "& .Mui-selected": { color: "#1e5393" } }}
+                    sx={{
+                      "& .MuiTab-root": { color: "#1e5393", textTransform: "uppercase", fontWeight: 500 },
+                      "& .Mui-selected": { color: "#1e5393" },
+                      "& .MuiTabs-indicator": { backgroundColor: "#1e5393" },
+                    }}
                   >
-                    <Tab icon={<ViewListIcon />} label="List View" {...a11yProps(0)} />
-                    <Tab icon={<TableViewIcon />} label="Table View" {...a11yProps(1)} />
-                    <Tab icon={<EventIcon />} label="Calendar View" {...a11yProps(2)} />
+                    <Tab icon={<ViewListIcon sx={{ mr: 1 }} />} label="List View" {...a11yProps(0)} />
+                    <Tab icon={<TableViewIcon sx={{ mr: 1 }} />} label="Table View" {...a11yProps(1)} />
+                    <Tab icon={<EventIcon sx={{ mr: 1 }} />} label="Calendar View" {...a11yProps(2)} />
                   </Tabs>
                 </Box>
 
@@ -457,73 +448,90 @@ export const UserProfile: React.FC = () => {
 
                     {filteredBookings.length > 0 ? (
                       filteredBookings.map((booking) => (
-                        <Card key={booking.id} sx={{ mb: 2 }}>
-                          <CardContent>
-                            <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                              <Box
+                        <Box
+                          key={booking.id}
+                          sx={{
+                            mb: 2,
+                            p: 3,
+                            borderRadius: 1,
+                            border: "1px solid #eee",
+                            "&:hover": {
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                            },
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 48,
+                                height: 48,
+                                borderRadius: 1,
+                                mr: 2,
+                                backgroundColor: getBackgroundColorForBooking(booking.color),
+                              }}
+                            >
+                              <CalendarMonthIcon sx={{ color: getColorForBooking(booking.color) }} />
+                            </Box>
+
+                            <Box sx={{ flexGrow: 1 }}>
+                              <Typography variant="h6" component="h3">
+                                {booking.room}
+                              </Typography>
+                              <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                                <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
+                                <Typography variant="body2" color="text.secondary">
+                                  {booking.startTime} - {booking.endTime}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                                <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
+                                <Typography variant="body2" color="text.secondary">
+                                  {booking.location}
+                                </Typography>
+                              </Box>
+                              {showAllBookings && (
+                                <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                                  <CalendarMonthIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    {formatShortDate(booking.date)}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+
+                            <Box>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<EditIcon />}
+                                onClick={() => handleEdit(booking)}
                                 sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: 48,
-                                  height: 48,
-                                  borderRadius: 1,
-                                  mr: 2,
-                                  backgroundColor: getBackgroundColorForBooking(booking.color),
+                                  mr: 1,
+                                  borderColor: "#1e5393",
+                                  color: "#1e5393",
+                                  "&:hover": {
+                                    borderColor: "#1e5393",
+                                    backgroundColor: "rgba(30, 83, 147, 0.04)",
+                                  },
                                 }}
                               >
-                                <CalendarMonthIcon sx={{ color: getColorForBooking(booking.color) }} />
-                              </Box>
-
-                              <Box sx={{ flexGrow: 1 }}>
-                                <Typography variant="h6" component="h3">
-                                  {booking.room}
-                                </Typography>
-                                <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-                                  <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {booking.startTime} - {booking.endTime}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-                                  <LocationOnIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
-                                  <Typography variant="body2" color="text.secondary">
-                                    {booking.location}
-                                  </Typography>
-                                </Box>
-                                {showAllBookings && (
-                                  <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
-                                    <CalendarMonthIcon sx={{ fontSize: 16, mr: 0.5, color: "text.secondary" }} />
-                                    <Typography variant="body2" color="text.secondary">
-                                      {formatShortDate(booking.date)}
-                                    </Typography>
-                                  </Box>
-                                )}
-                              </Box>
-
-                              <Box>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  startIcon={<EditIcon />}
-                                  onClick={() => handleEdit(booking)}
-                                  sx={{ mr: 1 }}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outlined"
-                                  color="error"
-                                  size="small"
-                                  startIcon={<DeleteIcon />}
-                                  onClick={() => handleCancel(booking)}
-                                >
-                                  Cancel
-                                </Button>
-                              </Box>
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                startIcon={<DeleteIcon />}
+                                onClick={() => handleCancel(booking)}
+                              >
+                                Cancel
+                              </Button>
                             </Box>
-                          </CardContent>
-                        </Card>
+                          </Box>
+                        </Box>
                       ))
                     ) : (
                       <Typography variant="body1" sx={{ textAlign: "center", py: 4 }}>
@@ -535,9 +543,9 @@ export const UserProfile: React.FC = () => {
 
                 {/* Table View */}
                 <TabPanel value={tabValue} index={1}>
-                  <TableContainer component={Paper}>
+                  <TableContainer>
                     <Table sx={{ minWidth: 650 }} aria-label="bookings table">
-                      <TableHead sx={{ backgroundColor: "#f0f4f9" }}>
+                      <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
                         <TableRow>
                           <TableCell>Room</TableCell>
                           <TableCell>Date</TableCell>
@@ -573,7 +581,15 @@ export const UserProfile: React.FC = () => {
                                   size="small"
                                   startIcon={<EditIcon />}
                                   onClick={() => handleEdit(booking)}
-                                  sx={{ mr: 1 }}
+                                  sx={{
+                                    mr: 1,
+                                    borderColor: "#1e5393",
+                                    color: "#1e5393",
+                                    "&:hover": {
+                                      borderColor: "#1e5393",
+                                      backgroundColor: "rgba(30, 83, 147, 0.04)",
+                                    },
+                                  }}
                                 >
                                   Edit
                                 </Button>
@@ -603,9 +619,9 @@ export const UserProfile: React.FC = () => {
 
                 {/* Calendar View */}
                 <TabPanel value={tabValue} index={2}>
-                  <Paper sx={{ p: 2, mb: 3 }}>
+                  <Paper sx={{ p: 2, mb: 3, border: "1px solid #eee", boxShadow: "none" }}>
                     <Grid container>
-                      <Grid item xs={2} sx={{ borderRight: "1px solid #eee", backgroundColor: "#f0f4f9" }}>
+                      <Grid item xs={2} sx={{ borderRight: "1px solid #eee", backgroundColor: "#f5f5f5" }}>
                         <Typography variant="subtitle2" sx={{ p: 1, textAlign: "center", fontWeight: "bold" }}>
                           Time
                         </Typography>
@@ -628,7 +644,7 @@ export const UserProfile: React.FC = () => {
                       <Grid item xs={10}>
                         <Typography
                           variant="subtitle2"
-                          sx={{ p: 1, textAlign: "center", fontWeight: "bold", backgroundColor: "#f0f4f9" }}
+                          sx={{ p: 1, textAlign: "center", fontWeight: "bold", backgroundColor: "#f5f5f5" }}
                         >
                           {formatShortDate(selectedDate)}
                         </Typography>
@@ -659,6 +675,8 @@ export const UserProfile: React.FC = () => {
                                         justifyContent: "space-between",
                                         position: "relative",
                                         overflow: "hidden",
+                                        boxShadow: "none",
+                                        border: `1px solid ${getColorForBooking(booking.color)}`,
                                       }}
                                     >
                                       <Typography variant="body2" sx={{ fontWeight: "bold" }}>
@@ -772,7 +790,16 @@ export const UserProfile: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEditDialog}>Cancel</Button>
-          <Button onClick={handleSaveEdit} variant="contained" sx={{ backgroundColor: "#1e5393" }}>
+          <Button
+            onClick={handleSaveEdit}
+            variant="contained"
+            sx={{
+              backgroundColor: "#1e5393",
+              "&:hover": {
+                backgroundColor: "#164279",
+              },
+            }}
+          >
             Save Changes
           </Button>
         </DialogActions>
