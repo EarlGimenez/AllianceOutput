@@ -48,6 +48,7 @@ export const AppRoutes = () => (
       <Route path={PATHS.REGISTER.path} element={<Views.Register />} />
       <Route path={PATHS.RECOVERY.path} element={<Views.Recovery />} />
       <Route path={PATHS.USER_SETTINGS.path} element={<Views.Settings />} />
+      <Route path={PATHS.USER_PROFILE.path} element={<Views.UserProfile />} />
 
       {/* Admin login (public) */}
       <Route path={PATHS.ADMIN_LOGIN.path} element={<Views.AdminLogin />} />

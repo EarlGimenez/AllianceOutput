@@ -52,6 +52,10 @@ export const PATHS = {
     path: "/user-settings",
     label: "User Settings"
   },
+   USER_PROFILE: {
+    path: "/user-profile",
+    label: "User Profile"
+  },
   ADMIN_LOGIN: {
     path: "/admin/login",
     name: "Admin Login",
