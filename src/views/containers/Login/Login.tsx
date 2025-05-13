@@ -1,4 +1,4 @@
-import type React from "react"
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom"
 import {
   Box,
@@ -12,15 +12,49 @@ import {
   FormControlLabel,
   Divider,
 } from "@mui/material"
-import GoogleIcon from "@mui/icons-material/Google"
-import FacebookIcon from "@mui/icons-material/Facebook"
-import AppleIcon from "@mui/icons-material/Apple"
+import { useNavigate } from "react-router-dom";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
 import { PATHS } from "../../../constant"
+import bcrypt from "bcryptjs";
 
 const SignIn: React.FC = () => {
+ const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      // Fetch users from db.json (via json-server)
+      const res = await fetch("http://localhost:3001/users?email=" + email);
+      const users = await res.json();
+
+      if (users.length === 0) {
+        setError("User not found");
+        return;
+      }
+
+      const user = users[0];
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        setError("Incorrect password");
+        return;
+      }
+
+      // Save auth status (you can also store user info)
+      localStorage.setItem("userAuthenticated", "true");
+      navigate("/user-profile"); // or wherever your user dashboard is
+    } catch (err) {
+      console.error("Login error", err);
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
       <LandingNav />
@@ -33,28 +67,39 @@ const SignIn: React.FC = () => {
           <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 4 }}>
             Welcome back! Please enter your details.
           </Typography>
+          {error && (
+            <Typography variant="body2" color="error" align="center" sx={{ mb: 2 }}>
+              {error}
+            </Typography>
+          )}
 
-          <Box component="form" noValidate sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-            />
+
+          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
+            autoFocus
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Password"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
               <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />

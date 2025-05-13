@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
   AppBar,
@@ -31,13 +31,45 @@ export const LandingNav: React.FC = () => {
     setMobileOpen(!mobileOpen)
   }
 
+  // Check if the user is authenticated
+  const isAuthenticated = localStorage.getItem("userAuthenticated") === "true"
+
   const navItems = [
-    { name: "Home", path: PATHS.HOMEPAGE.path },
+    { name: "Home", path: isAuthenticated ? PATHS.USER_PROFILE.path : PATHS.HOMEPAGE.path },
     { name: "Calendar", path: PATHS.CALENDAR.path },
     { name: "Resources", path: PATHS.ABOUT.path },
     { name: "Contact", path: PATHS.CONTACT.path },
-    { name: "Sign In", path: PATHS.LOGIN.path },
-    { name: "Register", path: PATHS.REGISTER.path },
+  ]
+
+  const guestNavItems = [
+    { name: "Sign In", path: PATHS.LOGIN.path, background: "#184377" },
+    { name: "Register", path: PATHS.REGISTER.path, background: "#184377" },
+  ]
+
+  const userNavItems = [
+    { 
+      name: "Profile", 
+      path: PATHS.USER_PROFILE.path, 
+      icon: "https://via.placeholder.com/150", // Placeholder image
+      isImage: true
+    },
+    { 
+      name: "Logout", 
+      action: () => { 
+        localStorage.removeItem("userAuthenticated")
+        window.location.reload() // Optionally reload the page after logout
+      },
+      color: "red",
+    },
+  ]
+
+  // Admin should not appear if logged in
+  const adminNavItem = { name: "Admin", path: PATHS.ADMIN_LOGIN.path }
+
+  const fullNavItems = [
+    ...navItems,
+    ...(isAuthenticated ? userNavItems : guestNavItems),
+    ...(isAuthenticated ? [] : [adminNavItem]), // Exclude Admin if logged in
   ]
 
   const isActive = (path: string) => location.pathname === path
@@ -48,40 +80,43 @@ export const LandingNav: React.FC = () => {
         Bookit
       </Typography>
       <List>
-        {navItems.map((item) => (
-          <ListItem key={item.name} disablePadding>
-            <ListItemText>
-              <Link
-                to={item.path}
-                style={{
-                  textDecoration: "none",
-                  color: isActive(item.path) ? "#ffffff" : "#1e5393",
-                  display: "block",
-                  padding: "8px 16px",
-                  backgroundColor: isActive(item.path) ? "#1e5393" : "transparent",
-                }}
-              >
-                {item.name}
-              </Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          <ListItemText>
-            <Link
-              to={PATHS.ADMIN_LOGIN.path}
-              style={{
-                textDecoration: "none",
-                color: isActive(PATHS.ADMIN_LOGIN.path) ? "#ffffff" : "#1e5393",
-                display: "block",
-                padding: "8px 16px",
-                backgroundColor: isActive(PATHS.ADMIN_LOGIN.path) ? "#1e5393" : "transparent",
-              }}
-            >
-              Admin
-            </Link>
-          </ListItemText>
-        </ListItem>
+        {fullNavItems.map((item) =>
+          "action" in item ? (
+            <ListItem key={item.name} disablePadding>
+              <ListItemText>
+                <Button
+                  onClick={item.action}
+                  sx={{
+                    textTransform: "none",
+                    width: "100%",
+                    color: item.color || "#1e5393",
+                    textAlign: "left",
+                    padding: "8px 16px",
+                  }}
+                >
+                  {item.name}
+                </Button>
+              </ListItemText>
+            </ListItem>
+          ) : (
+            <ListItem key={item.name} disablePadding>
+              <ListItemText>
+                <Link
+                  to={item.path}
+                  style={{
+                    textDecoration: "none",
+                    color: isActive(item.path) ? "#ffffff" : "#1e5393",
+                    display: "block",
+                    padding: "8px 16px",
+                    backgroundColor: isActive(item.path) ? "#1e5393" : "transparent",
+                  }}
+                >
+                  {item.name}
+                </Link>
+              </ListItemText>
+            </ListItem>
+          )
+        )}
       </List>
     </Box>
   )
@@ -93,7 +128,7 @@ export const LandingNav: React.FC = () => {
           <Typography
             variant="h6"
             component={Link}
-            to="/"
+            to={isAuthenticated ? PATHS.USER_PROFILE.path : PATHS.HOMEPAGE.path} // Adjusted Home path based on authentication
             sx={{
               mr: 2,
               display: { xs: "none", md: "flex" },
@@ -108,18 +143,17 @@ export const LandingNav: React.FC = () => {
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
               size="large"
-              aria-label="open drawer"
               edge="start"
               color="inherit"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2, padding: "8px" }}
+              sx={{ mr: 2 }}
             >
               <MenuIcon />
             </IconButton>
             <Typography
               variant="h6"
               component={Link}
-              to="/"
+              to={isAuthenticated ? PATHS.USER_PROFILE.path : PATHS.HOMEPAGE.path} // Adjusted Home path for mobile as well
               sx={{
                 flexGrow: 1,
                 display: { xs: "flex", md: "none" },
@@ -134,47 +168,48 @@ export const LandingNav: React.FC = () => {
           </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" }, justifyContent: "flex-end" }}>
-            {navItems.map((item) => (
-              <Button
-                key={item.name}
-                component={Link}
-                to={item.path}
-                sx={{
-                  color: "white",
-                  display: "block",
-                  mx: 1,
-                  backgroundColor: isActive(item.path) ? "rgba(255, 255, 255, 0.2)" : "transparent",
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  },
-                  ...(item.name === "Sign In" || item.name === "Register"
-                    ? {
-                        backgroundColor: "rgba(255, 255, 255, 0.2)",
-                        "&:hover": {
-                          backgroundColor: "rgba(255, 255, 255, 0.3)",
-                        },
-                      }
-                    : {}),
-                }}
-              >
-                {item.name}
-              </Button>
-            ))}
-            <Button
-              component={Link}
-              to={PATHS.ADMIN_LOGIN.path}
-              sx={{
-                color: "white",
-                display: "block",
-                mx: 1,
-                backgroundColor: isActive(PATHS.ADMIN_LOGIN.path) ? "rgba(255, 255, 255, 0.2)" : "transparent",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            >
-              Admin
-            </Button>
+            {fullNavItems.map((item) =>
+              "action" in item ? (
+                <Button
+                  key={item.name}
+                  onClick={item.action}
+                  sx={{
+                    color: "white",
+                    mx: 1,
+                    backgroundColor: item.color ? item.color : "transparent",
+                    "&:hover": {
+                      backgroundColor: item.color ? "#ff4747" : "rgba(255, 255, 255, 0.1)",
+                    },
+                  }}
+                >
+                  {item.name}
+                </Button>
+              ) : (
+                <Button
+                  key={item.name}
+                  component={Link}
+                  to={item.path}
+                  sx={{
+                    color: "white",
+                    mx: 1,
+                    backgroundColor: isActive(item.path) ? "rgba(255, 255, 255, 0.2)" : "transparent",
+                    "&:hover": {
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                    },
+                    ...(item.name === "Sign In" || item.name === "Register"
+                      ? {
+                          backgroundColor: "#184377", // Contrast background color for Sign In/Up
+                          "&:hover": {
+                            backgroundColor: "#184377", // Maintain contrast
+                          },
+                        }
+                      : {}),
+                  }}
+                >
+                  {item.name}
+                </Button>
+              )
+            )}
           </Box>
         </Toolbar>
       </Container>

@@ -128,6 +128,26 @@
       "fullName": "test",
       "company": "test",
       "password": "testtest"
+    },
+    {
+      "id": 1747150009906,
+      "firstName": "test2",
+      "lastName": "test",
+      "email": "test2@test.com",
+      "password": "$2b$10$1dKoos6vRur0XKGRNGNUqed1cIES/sQIiXqFEmmEjYw/LXLS0vqKu"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "1",
+      "title": "Meeting with Team",
+      "date": "2025-05-15",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "room": "Meeting Room",
+      "description": "Discuss project updates",
+      "recurrenceRule": null,
+      "userId": 1747150009906
     }
   ]
 }
