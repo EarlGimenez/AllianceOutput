@@ -139,15 +139,15 @@
   ],
   "bookings": [
     {
-      "id": "1",
-      "title": "Meeting with Team",
-      "date": "2025-05-15",
-      "startTime": "10:00",
-      "endTime": "11:00",
+      "id": "c1e2",
+      "title": "test",
+      "date": "2025-05-13",
+      "startTime": "09:00",
+      "endTime": "10:00",
       "room": "Meeting Room",
-      "description": "Discuss project updates",
-      "recurrenceRule": null,
-      "userId": 1747150009906
+      "description": "",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250613T000000Z",
+      "userId": ""
     }
   ]
 }

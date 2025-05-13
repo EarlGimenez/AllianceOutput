@@ -15,6 +15,7 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { CalendarEvent, Room } from './CalendarEvents';
+import { createBooking, createRecurringBookings } from '../services/bookingService';
 
 interface BookingFormProps {
   rooms: Room[];
@@ -25,35 +26,31 @@ interface BookingFormProps {
   onDelete?: (eventId: string) => void; // Added for delete functionality
 }
 
+// Update the formatDateForInput function
 const formatDateForInput = (date: Date | undefined | string): string => {
   if (!date) return '';
   try {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
-    const year = d.getFullYear();
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const day = d.getDate().toString().padStart(2, '0');
+    // Force UTC to avoid timezone issues
+    const year = d.getUTCFullYear();
+    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = d.getUTCDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (error) {
     return '';
   }
 };
 
+// Update the formatTimeForInput function
 const formatTimeForInput = (time: string | undefined): string => {
-    if (!time) return '';
-    if (/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
-        return time;
-    }
-    try {
-        const d = new Date(`1970-01-01T${time}`);
-        if (isNaN(d.getTime())) return '';
-        const hours = d.getHours().toString().padStart(2, '0');
-        const minutes = d.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
-    } catch (error) {
-        return '';
-    }
-}
+  if (!time) return '09:00';
+  // Simple validation for HH:MM format
+  if (/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
+    return time;
+  }
+  return '09:00'; // Default fallback
+};
 
 const BookingForm: React.FC<BookingFormProps> = ({
   rooms,
@@ -120,61 +117,73 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setDate(formatDateForInput(initialData?.date || currentDate));
   }, [initialData?.date, currentDate]);
 
-  const validate = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-    if (!title.trim()) newErrors.title = 'Title is required.';
-    if (!date && !isRecurring) newErrors.date = 'Date is required for one-time bookings.';
-    if (!date && isRecurring && recurrenceType !== 'none') newErrors.date = 'Start date is required for recurring bookings.';
-    if (!startTime) newErrors.startTime = 'Start time is required.';
-    if (!endTime) newErrors.endTime = 'End time is required.';
-    if (startTime && endTime && startTime >= endTime) newErrors.endTime = 'End time must be after start time.';
-    if (!selectedRoom) newErrors.room = 'Room selection is required.';
-    if (isRecurring && recurrenceType === 'weekly' && weeklyDays.length === 0) {
-        newErrors.weeklyDays = 'Please select at least one day for weekly recurrence.';
-    }
-    if (isRecurring && recurrenceType !== 'none' && recurrenceEndDate && date && recurrenceEndDate < date) {
-        newErrors.recurrenceEndDate = 'Recurrence end date cannot be before the start date.';
-    }
-    if (isRecurring && recurrenceType === 'none' && isRecurring) {
-        newErrors.recurrenceType = 'Please select a recurrence type if booking is recurring.';
-    }
+  // Update the validate function
+const validate = (): boolean => {
+  const newErrors: { [key: string]: string } = {};
+  
+  // Basic validation
+  if (!title.trim()) newErrors.title = 'Title is required';
+  if (!startTime) newErrors.startTime = 'Start time required';
+  if (!endTime) newErrors.endTime = 'End time required';
+  if (startTime >= endTime) newErrors.endTime = 'Must be after start';
+  if (!selectedRoom) newErrors.room = 'Room required';
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Date validation
+  if (!date) {
+    newErrors.date = isRecurring ? 'Start date required' : 'Date required';
+  } else {
+    const selectedDate = new Date(date);
+    if (isNaN(selectedDate.getTime())) {
+      newErrors.date = 'Invalid date';
+    }
+  }
+
+  // Recurrence validation
+  if (isRecurring) {
+    if (recurrenceType === 'none') {
+      newErrors.recurrenceType = 'Select recurrence type';
+    }
+    if (recurrenceType === 'weekly' && weeklyDays.length === 0) {
+      newErrors.weeklyDays = 'Select at least one day';
+    }
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+const handleSubmit = async (event: React.FormEvent) => {
+  event.preventDefault();
+  if (!validate()) return;
+
+  const userId = localStorage.getItem('userId') || '';
+  const bookingDate = date || formatDateForInput(currentDate) || '';
+  
+  const bookingData: Partial<CalendarEvent> = {
+    id: initialData?.id,
+    title,
+    date: bookingDate,
+    startTime,
+    endTime,
+    room: selectedRoom as Room,
+    description
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!validate()) return;
-
-    const bookingData: Partial<CalendarEvent> = {
-      id: initialData?.id,
-      title,
-      date: date,
-      startTime,
-      endTime,
-      room: selectedRoom as Room,
-      description,
-    };
-
-    if (isRecurring && recurrenceType !== 'none') {
-      let rrule = `RRULE:FREQ=${recurrenceType.toUpperCase()}`;
-      if (recurrenceType === 'weekly' && weeklyDays.length > 0) {
-        rrule += `;BYDAY=${weeklyDays.join(',')}`;
-      }
-      if (recurrenceEndDate) {
-        const endDateObj = new Date(recurrenceEndDate);
-        endDateObj.setHours(23, 59, 59, 999);
-        const untilDateISO = endDateObj.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
-        rrule += `;UNTIL=${untilDateISO}`;
-      }
-      bookingData.recurrenceRule = rrule;
-    } else {
-        bookingData.recurrenceRule = undefined;
+  if (isRecurring && recurrenceType !== 'none') {
+    let rrule = `RRULE:FREQ=${recurrenceType.toUpperCase()}`;
+    if (recurrenceType === 'weekly' && weeklyDays.length > 0) {
+      rrule += `;BYDAY=${weeklyDays.join(',')}`;
     }
+    // Add 1 month limit
+    const endDate = new Date(bookingDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+    rrule += `;UNTIL=${endDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
+    
+    bookingData.recurrenceRule = rrule;
+  }
 
-    onSubmit(bookingData);
-  };
+  onSubmit(bookingData);
+};
 
   const handleIsRecurringChange = (checked: boolean) => {
     setIsRecurring(checked);
@@ -190,17 +199,24 @@ const BookingForm: React.FC<BookingFormProps> = ({
     }
   };
 
-  const handleRecurrenceTypeChange = (newType: 'none' | 'daily' | 'weekly' | 'monthly') => {
-    setRecurrenceType(newType);
-    if (errors.recurrenceType) setErrors(prev => ({...prev, recurrenceType: ''}));
-    if (newType === 'none') {
-      setIsRecurring(false);
-      setWeeklyDays([]);
-      setRecurrenceEndDate('');
-    } else {
-      setIsRecurring(true);
+// Update the recurrence type change handler
+const handleRecurrenceTypeChange = (newType: 'none' | 'daily' | 'weekly' | 'monthly') => {
+  setRecurrenceType(newType);
+  if (errors.recurrenceType) setErrors(prev => ({...prev, recurrenceType: ''}));
+  
+  if (newType === 'none') {
+    setIsRecurring(false);
+    setWeeklyDays([]);
+  } else {
+    setIsRecurring(true);
+    // Set default weekly days if switching to weekly
+    if (newType === 'weekly' && weeklyDays.length === 0) {
+      const defaultDay = ['MO','TU','WE','TH','FR'][new Date(date || currentDate || new Date()).getDay() - 1] || 'MO';
+      setWeeklyDays([defaultDay]);
     }
-  };
+  }
+};
+
 
   const handleWeeklyDayChange = (day: string) => {
     setWeeklyDays(prev =>
@@ -209,11 +225,15 @@ const BookingForm: React.FC<BookingFormProps> = ({
     if (errors.weeklyDays) setErrors(prev => ({...prev, weeklyDays: ''}));
   };
 
-  const dayOptions = [
-    { value: 'SU', label: 'Sun' }, { value: 'MO', label: 'Mon' }, { value: 'TU', label: 'Tue' },
-    { value: 'WE', label: 'Wed' }, { value: 'TH', label: 'Thu' }, { value: 'FR', label: 'Fri' },
-    { value: 'SA', label: 'Sat' },
-  ];
+const dayOptions = [
+  { value: 'MO', label: 'Monday' },
+  { value: 'TU', label: 'Tuesday' },
+  { value: 'WE', label: 'Wednesday' },
+  { value: 'TH', label: 'Thursday' },
+  { value: 'FR', label: 'Friday' },
+  { value: 'SA', label: 'Saturday' },
+  { value: 'SU', label: 'Sunday' }
+];
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate sx={{ p: { xs: 1, sm: 2 } }}>

@@ -22,15 +22,17 @@ import {
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
 import { LandingNav } from '../../components/LandingNav';
 import BookingForm from '../../components/BookingForm';
+import { createBooking, updateBooking, deleteBooking } from '../../services/bookingService';
 
 interface CalendarProps {
   events: CalendarEvent[];
-  onAddEvent?: (newEvent: Partial<CalendarEvent>) => void;
-  onEditEvent?: (updatedEvent: CalendarEvent) => void;
-  onDeleteEvent?: (eventId: string) => void;
   currentDate: Date;
   onDateChange?: (date: Date) => void;
+  onAddEvent?: (newEvent: Partial<CalendarEvent>) => Promise<void>;
+  onEditEvent?: (updatedEvent: CalendarEvent) => Promise<void>;
+  onDeleteEvent?: (eventId: string) => Promise<void>;
 }
+
 
 const Calendar: React.FC<CalendarProps> = ({
   events: initialEvents,
@@ -146,23 +148,50 @@ const Calendar: React.FC<CalendarProps> = ({
     setEditingEvent(undefined);
   };
 
-  const handleBookingSubmit = (bookingData: Partial<CalendarEvent>) => {
+const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
+  try {
+    const adjustToLocalDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split('T')[0];
+    };
+
+    const bookingDate = bookingData.date 
+      ? adjustToLocalDate(bookingData.date)
+      : adjustToLocalDate(currentDate.toISOString());
+
     if (bookingData.id) {
+      // Update existing booking
+      const updatedBooking = await updateBooking(bookingData.id, {
+        ...bookingData,
+        date: bookingDate
+      });
       if (parentOnEditEvent) {
-        parentOnEditEvent(bookingData as CalendarEvent);
+        await parentOnEditEvent(updatedBooking);
       } else {
-        setEvents(prevEvents => prevEvents.map(ev => ev.id === bookingData.id ? {...ev, ...bookingData} as CalendarEvent : ev));
+        setEvents(prev => prev.map(ev => ev.id === updatedBooking.id ? updatedBooking : ev));
       }
     } else {
-      const newEventWithId = { ...bookingData, id: Date.now().toString() } as CalendarEvent;
+      // Create new booking
+      const newBooking = await createBooking({
+        ...bookingData,
+        date: bookingDate,
+        userId: localStorage.getItem('userId') || ''
+      } as Omit<CalendarEvent, 'id'>);
+      
       if (parentOnAddEvent) {
-        parentOnAddEvent(newEventWithId);
+        await parentOnAddEvent(newBooking);
       } else {
-        setEvents(prevEvents => [...prevEvents, newEventWithId]);
+        setEvents(prev => [...prev, newBooking]);
       }
     }
     handleCloseBookingForm();
-  };
+  } catch (error) {
+    console.error('Error saving booking:', error);
+    alert('Failed to save booking');
+  }
+};
 
   const handleCreateButtonClick = () => {
     handleOpenBookingForm(undefined, currentDate);
@@ -191,16 +220,22 @@ const Calendar: React.FC<CalendarProps> = ({
     setEventToDeleteId(null);
   };
 
-  const handleConfirmDelete = () => {
-    if (eventToDeleteId) {
-      if (parentOnDeleteEvent) {
-        parentOnDeleteEvent(eventToDeleteId);
-      } else {
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDeleteId));
-      }
-      handleCloseDeleteConfirm();
+const handleConfirmDelete = async () => {
+  if (!eventToDeleteId) return;
+  
+  try {
+    await deleteBooking(eventToDeleteId);
+    if (parentOnDeleteEvent) {
+      await parentOnDeleteEvent(eventToDeleteId);
+    } else {
+      setEvents(prev => prev.filter(event => event.id !== eventToDeleteId));
     }
-  };
+    handleCloseDeleteConfirm();
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    alert('Failed to delete booking');
+  }
+};
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -275,57 +310,42 @@ const Calendar: React.FC<CalendarProps> = ({
       const cellDate = new Date(year, month, day);
       const isCurrentSelectedDate = cellDate.toDateString() === currentDate.toDateString();
 
-      const eventsForDay = events.filter(event => {
-        const currentDisplayDate = cellDate;
+    // Update the event filtering logic
+    const eventsForDay = events.filter(event => {
+      const eventDate = new Date(event.date + 'T00:00:00');
+      const displayDate = new Date(currentDate);
+      displayDate.setHours(0, 0, 0, 0);
 
-        if (!event.recurrenceRule) {
-          return event.date === currentDisplayDate.toISOString().split('T')[0];
-        }
+      // Check if it's the exact date match
+      if (eventDate.toDateString() === displayDate.toDateString()) {
+        return true;
+      }
 
-        const eventSeriesStartDate = new Date(event.date);
-        eventSeriesStartDate.setHours(0, 0, 0, 0);
+      // Check for recurring events
+      if (event.recurrenceRule) {
+        const rule = event.recurrenceRule;
+        const startDate = new Date(event.date + 'T00:00:00');
+        
+        // Check if before start date
+        if (displayDate < startDate) return false;
 
-        const currentDisplayDayStart = new Date(currentDisplayDate);
-        currentDisplayDayStart.setHours(0, 0, 0, 0);
-
-        if (currentDisplayDayStart < eventSeriesStartDate) {
-          return false;
-        }
-
-        const untilMatch = event.recurrenceRule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-        if (untilMatch && untilMatch[1]) {
-          const untilDateString = untilMatch[1];
-          const recurrenceEndDateUtc = new Date(
-            untilDateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-          );
-          if (currentDisplayDayStart > recurrenceEndDateUtc) {
-            return false;
-          }
-        }
-
-        if (event.recurrenceRule.includes('FREQ=DAILY')) {
+        // Check recurrence rules
+        if (rule.includes('FREQ=DAILY')) {
           return true;
         }
-
-        if (event.recurrenceRule.includes('FREQ=WEEKLY')) {
-          const byDayMatch = event.recurrenceRule.match(/BYDAY=([A-Z,]+)/);
-          const currentDayOfWeekShort = dayLabelsShort[currentDisplayDayStart.getDay()].substring(0, 2).toUpperCase();
-
-          if (byDayMatch && byDayMatch[1]) {
-            const ruleDays = byDayMatch[1].split(',');
-            return ruleDays.includes(currentDayOfWeekShort);
-          } else {
-            return currentDisplayDayStart.getDay() === eventSeriesStartDate.getDay();
-          }
+        else if (rule.includes('FREQ=WEEKLY')) {
+          const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+          const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
+          return byDayMatch ? byDayMatch[1].split(',').includes(currentDay) : 
+                displayDate.getDay() === startDate.getDay();
         }
-
-        if (event.recurrenceRule.includes('FREQ=MONTHLY')) {
-          return currentDisplayDayStart.getDate() === eventSeriesStartDate.getDate();
+        else if (rule.includes('FREQ=MONTHLY')) {
+          return displayDate.getDate() === startDate.getDate();
         }
-        
-        return false;
-      });
+      }
 
+      return false;
+    });
       cells.push(
         <Paper
           elevation={isCurrentSelectedDate ? 4 : 1}
