@@ -16,7 +16,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  useTheme, // Added useTheme
+  DialogActions, // Added DialogActions
+  useTheme,
 } from '@mui/material';
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
 import { LandingNav } from '../../components/LandingNav';
@@ -27,7 +28,7 @@ interface CalendarProps {
   onAddEvent?: (newEvent: Partial<CalendarEvent>) => void;
   onEditEvent?: (updatedEvent: CalendarEvent) => void;
   onDeleteEvent?: (eventId: string) => void;
-  currentDate: Date; // This is the prop for the initial/controlled date
+  currentDate: Date;
   onDateChange?: (date: Date) => void;
 }
 
@@ -35,16 +36,14 @@ const Calendar: React.FC<CalendarProps> = ({
   events: initialEvents,
   onAddEvent: parentOnAddEvent,
   onEditEvent: parentOnEditEvent,
-  currentDate: passedCurrentDate, // Renamed prop for clarity
+  onDeleteEvent: parentOnDeleteEvent,
+  currentDate: passedCurrentDate,
   onDateChange,
 }) => {
   const theme = useTheme();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-
-  // Internal state for currentDate if not controlled by parent
   const [internalCurrentDate, setInternalCurrentDate] = useState(passedCurrentDate || new Date());
 
-  // Determine effective currentDate and its setter
   const currentDate = onDateChange ? passedCurrentDate : internalCurrentDate;
   const setCurrentDate = (newDate: Date) => {
     if (onDateChange) {
@@ -58,13 +57,11 @@ const Calendar: React.FC<CalendarProps> = ({
     setEvents(initialEvents);
   }, [initialEvents]);
 
-  // Sync internal date if passedCurrentDate prop changes and component is uncontrolled
   useEffect(() => {
     if (!onDateChange) {
       setInternalCurrentDate(passedCurrentDate || new Date());
     }
   }, [passedCurrentDate, onDateChange]);
-
 
   const rooms: Room[] = [
     'Meeting Room',
@@ -75,22 +72,21 @@ const Calendar: React.FC<CalendarProps> = ({
   ];
 
   const timeSlots = Array.from({ length: 15 }, (_, i) => {
-    const hour = 8 + i; // Start from 8 AM
+    const hour = 8 + i;
     return `${hour.toString().padStart(2, '0')}:00`;
   });
-  const dayLabelsFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayLabelsShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-
   const [view, setView] = useState<'day' | 'month'>('day');
-
   const [popoverAnchorEl, setPopoverAnchorEl] = useState<HTMLElement | null>(null);
   const [popoverEvents, setPopoverEvents] = useState<CalendarEvent[]>([]);
   const [popoverDate, setPopoverDate] = useState<Date | null>(null);
-
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
   const [formDate, setFormDate] = useState<Date | undefined>(currentDate);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editingEvent) {
@@ -148,11 +144,9 @@ const Calendar: React.FC<CalendarProps> = ({
   const handleCloseBookingForm = () => {
     setIsBookingFormOpen(false);
     setEditingEvent(undefined);
-    // setFormDate(undefined); // Or reset to currentDate
   };
 
   const handleBookingSubmit = (bookingData: Partial<CalendarEvent>) => {
-    console.log('Booking submitted:', bookingData);
     if (bookingData.id) {
       if (parentOnEditEvent) {
         parentOnEditEvent(bookingData as CalendarEvent);
@@ -183,9 +177,34 @@ const Calendar: React.FC<CalendarProps> = ({
     setView('day');
   };
 
+  const handleRequestDelete = (eventId: string) => {
+    setEventToDeleteId(eventId);
+    setDeleteConfirmOpen(true);
+    // Close the booking form if it's open for the event being deleted
+    if (editingEvent?.id === eventId) {
+        handleCloseBookingForm();
+    }
+  };
+
+  const handleCloseDeleteConfirm = () => {
+    setDeleteConfirmOpen(false);
+    setEventToDeleteId(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (eventToDeleteId) {
+      if (parentOnDeleteEvent) {
+        parentOnDeleteEvent(eventToDeleteId);
+      } else {
+        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDeleteId));
+      }
+      handleCloseDeleteConfirm();
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (view !== 'month' || isBookingFormOpen || popoverAnchorEl) return;
+      if (view !== 'month' || isBookingFormOpen || popoverAnchorEl || deleteConfirmOpen) return;
 
       let newDate = new Date(currentDate);
       let dateChanged = false;
@@ -225,8 +244,7 @@ const Calendar: React.FC<CalendarProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [view, currentDate, setCurrentDate, isBookingFormOpen, popoverAnchorEl]);
-
+  }, [view, currentDate, setCurrentDate, isBookingFormOpen, popoverAnchorEl, deleteConfirmOpen]);
 
   const renderMonthView = () => {
     const year = currentDate.getFullYear();
@@ -255,26 +273,23 @@ const Calendar: React.FC<CalendarProps> = ({
 
     for (let day = 1; day <= daysInMonth; day++) {
       const cellDate = new Date(year, month, day);
-      const cellDateString = cellDate.toISOString().split('T')[0];
       const isCurrentSelectedDate = cellDate.toDateString() === currentDate.toDateString();
 
       const eventsForDay = events.filter(event => {
-        const currentDisplayDate = cellDate; // Date object for the current cell
+        const currentDisplayDate = cellDate;
 
-        // Non-recurring event check
         if (!event.recurrenceRule) {
           return event.date === currentDisplayDate.toISOString().split('T')[0];
         }
 
-        // Recurring event check
         const eventSeriesStartDate = new Date(event.date);
-        eventSeriesStartDate.setHours(0, 0, 0, 0); // Start of the event's first day (local)
+        eventSeriesStartDate.setHours(0, 0, 0, 0);
 
         const currentDisplayDayStart = new Date(currentDisplayDate);
-        currentDisplayDayStart.setHours(0, 0, 0, 0); // Start of the day we are checking (local)
+        currentDisplayDayStart.setHours(0, 0, 0, 0);
 
         if (currentDisplayDayStart < eventSeriesStartDate) {
-          return false; // Not started yet
+          return false;
         }
 
         const untilMatch = event.recurrenceRule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
@@ -284,11 +299,10 @@ const Calendar: React.FC<CalendarProps> = ({
             untilDateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
           );
           if (currentDisplayDayStart > recurrenceEndDateUtc) {
-            return false; // Current day is past the recurrence end date
+            return false;
           }
         }
 
-        // Check frequency rules
         if (event.recurrenceRule.includes('FREQ=DAILY')) {
           return true;
         }
@@ -309,7 +323,7 @@ const Calendar: React.FC<CalendarProps> = ({
           return currentDisplayDayStart.getDate() === eventSeriesStartDate.getDate();
         }
         
-        return false; // Default for recurring if no specific rule matches for the day
+        return false;
       });
 
       cells.push(
@@ -493,14 +507,12 @@ const Calendar: React.FC<CalendarProps> = ({
                         .filter(event => {
                             if (event.room !== room) return false;
                             
-                            const currentDisplayDate = currentDate; // Effective current date for day view
+                            const currentDisplayDate = currentDate;
 
-                            // Non-recurring event check
                             if (!event.recurrenceRule) {
                               return event.date === currentDisplayDate.toISOString().split('T')[0];
                             }
 
-                            // Recurring event check
                             const eventSeriesStartDate = new Date(event.date);
                             eventSeriesStartDate.setHours(0, 0, 0, 0); 
 
@@ -634,9 +646,34 @@ const Calendar: React.FC<CalendarProps> = ({
             onCancel={handleCloseBookingForm}
             initialData={editingEvent}
             currentDate={formDate}
+            onDelete={handleRequestDelete} // Pass the delete handler
           />
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCloseDeleteConfirm}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Confirm Deletion"}</DialogTitle>
+        <DialogContent>
+          <Typography id="alert-dialog-description">
+            Are you sure you want to cancel this reservation? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteConfirm} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 };
@@ -651,7 +688,7 @@ const calculateEventHeight = (startTime: string, endTime: string): string => {
   const [startHours, startMinutes] = startTime.split(':').map(Number);
   const [endHours, endMinutes] = endTime.split(':').map(Number);
   const durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-  return `${Math.max(30, durationMinutes)}px`; // Ensure a minimum height
+  return `${Math.max(30, durationMinutes)}px`;
 };
 
 export default Calendar;
