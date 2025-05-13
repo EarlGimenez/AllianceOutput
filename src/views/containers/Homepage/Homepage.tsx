@@ -65,15 +65,25 @@ const Homepage: React.FC = () => {
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
       <LandingNav />
 
-      {/* Top image banner - 66px tall */}
-      <Box sx={{ height: "66px", width: "100%", bgcolor: "grey.200" }}>
-        <Box
-          component="img"
-          src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
-          alt="Top banner"
-          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </Box>
+<Box sx={{ height: "66px", width: "100%", position: "relative" }}>
+  <Box
+    component="img"
+    src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+    alt="Top banner"
+    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+  />
+  <Box
+    sx={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      bgcolor: "rgba(0,0,0,0.4", // dark tint
+    }}
+  />
+</Box>
+
 
       {/* Main banner - 524px tall */}
       <Box
@@ -133,14 +143,25 @@ const Homepage: React.FC = () => {
       </Box>
 
       {/* Middle image banner - 240px tall */}
-      <Box sx={{ height: "240px", width: "100%", bgcolor: "grey.200" }}>
-        <Box
-          component="img"
-          src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
-          alt="Middle banner"
-          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </Box>
+<Box sx={{ height: "240px", width: "100%", position: "relative" }}>
+  <Box
+    component="img"
+    src="https://t4.ftcdn.net/jpg/00/80/91/11/360_F_80911186_RoBCsyLrNTrG7Y1EOyCsaCJO5DyHgTox.jpg"
+    alt="Middle banner"
+    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+  />
+  <Box
+    sx={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      bgcolor: "rgba(0,0,0,0.4)", // same dark tint
+    }}
+  />
+</Box>
+
 
       {/* Testimonials section */}
       <Box sx={{ py: 8, bgcolor: "#1e5393", color: "white", width: "100%" }}>

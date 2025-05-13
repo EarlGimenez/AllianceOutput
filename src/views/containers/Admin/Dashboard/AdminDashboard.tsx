@@ -3,8 +3,8 @@
 import type React from "react"
 import { Box, Typography, Grid, Card, CardContent, Paper, useTheme, CircularProgress } from "@mui/material"
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -14,20 +14,17 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
+  BarChart,
+  Bar
 } from "recharts"
 import PeopleIcon from "@mui/icons-material/People"
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"
 import TrendingUpIcon from "@mui/icons-material/TrendingUp"
-import PublicIcon from "@mui/icons-material/Public"
 import { AdminSidebar } from "../../../components/AdminSidebar"
-import { AdminHeader } from "../../../components/AdminHeader"
 
 const AdminDashboard: React.FC = () => {
   const theme = useTheme()
 
-  // Mock data for metrics
   const metrics = {
     totalUsers: 1248,
     activeUsers: 876,
@@ -36,17 +33,6 @@ const AdminDashboard: React.FC = () => {
     roomUsageRate: 78,
   }
 
-  // Mock data for user distribution by country
-  const usersByCountry = [
-    { name: "United States", value: 540 },
-    { name: "United Kingdom", value: 210 },
-    { name: "Canada", value: 170 },
-    { name: "Australia", value: 140 },
-    { name: "Germany", value: 90 },
-    { name: "Others", value: 98 },
-  ]
-
-  // Mock data for user activity over time
   const userActivity = [
     { name: "Jan", active: 400, total: 600 },
     { name: "Feb", active: 450, total: 650 },
@@ -62,30 +48,29 @@ const AdminDashboard: React.FC = () => {
     { name: "Dec", active: 876, total: 1248 },
   ]
 
-  // Colors for pie chart
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"]
+  const roomUsageByType = [
+    { name: "Conference", value: 12 },
+    { name: "Training", value: 8 },
+    { name: "Meeting", value: 10 },
+    { name: "Interview", value: 2 },
+  ]
 
-  // Custom gauge chart component
+  const COLORS = ["#1e88e5", "#43a047", "#fb8c00", "#8e24aa"]
+
   const GaugeChart = ({ value, color, label }: { value: number; color: string; label: string }) => {
     return (
-      <Box sx={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center" }}>
+      <Box sx={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center", px: 2 }}>
         <Box sx={{ position: "relative", display: "inline-flex" }}>
           <CircularProgress
             variant="determinate"
-            sx={{
-              color: theme.palette.grey[200],
-            }}
+            sx={{ color: theme.palette.grey[200] }}
             size={120}
             thickness={6}
             value={100}
           />
           <CircularProgress
             variant="determinate"
-            sx={{
-              color: color,
-              position: "absolute",
-              left: 0,
-            }}
+            sx={{ color, position: "absolute", left: 0 }}
             size={120}
             thickness={6}
             value={value}
@@ -117,11 +102,10 @@ const AdminDashboard: React.FC = () => {
   return (
     <AdminSidebar>
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-
         <Box sx={{ p: 3, flexGrow: 1 }}>
           {/* Metrics Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: "100%" }}>
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -142,7 +126,7 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: "100%" }}>
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -163,7 +147,7 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: "100%" }}>
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -183,27 +167,6 @@ const AdminDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ height: "100%" }}>
-                <CardContent>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <Box>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        User Countries
-                      </Typography>
-                      <Typography variant="h4" sx={{ fontWeight: "medium", mb: 1 }}>
-                        24
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Global presence
-                      </Typography>
-                    </Box>
-                    <PublicIcon sx={{ fontSize: 40, color: "#1e5393" }} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
           </Grid>
 
           {/* Charts */}
@@ -218,12 +181,7 @@ const AdminDashboard: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={userActivity}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
@@ -244,83 +202,43 @@ const AdminDashboard: React.FC = () => {
               </Paper>
             </Grid>
 
-            {/* Users by Country */}
+            {/* Gauges */}
             <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 3, height: "100%" }}>
-                <Typography variant="h6" gutterBottom>
-                  Users by Country
-                </Typography>
-                <Box sx={{ height: 300, display: "flex", justifyContent: "center" }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={usersByCountry}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {usersByCountry.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => [`${value} users`, "Count"]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Gauge Charts */}
-            <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3, height: "100%" }}>
                 <Typography variant="h6" gutterBottom>
                   System Metrics
                 </Typography>
-                <Box sx={{ display: "flex", justifyContent: "space-around", flexWrap: "wrap", py: 3 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", py: 3 }}>
                   <GaugeChart value={metrics.bounceRate} color="#ff9800" label="Bounce Rate" />
-                  <GaugeChart value={metrics.roomUsageRate} color="#4caf50" label="Room Usage Rate" />
+                  <GaugeChart value={metrics.roomUsageRate} color="#4caf50" label="Room Usage" />
                 </Box>
               </Paper>
             </Grid>
 
             {/* Room Usage by Type */}
-            <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 3, height: "100%" }}>
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
                   Room Usage by Type
                 </Typography>
                 <Box sx={{ height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={[
-                        { name: "Conference", usage: 85 },
-                        { name: "Meeting", usage: 75 },
-                        { name: "Board", usage: 60 },
-                        { name: "Huddle", usage: 90 },
-                        { name: "Training", usage: 50 },
-                      ]}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
+                      data={roomUsageByType}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
-                      <YAxis label={{ value: "Usage %", angle: -90, position: "insideLeft" }} />
+                      <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="usage" fill="#1e5393" name="Usage %" />
+                      <Bar dataKey="value" fill="#1e88e5" name="Room Count" />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
               </Paper>
             </Grid>
+
           </Grid>
         </Box>
       </Box>
