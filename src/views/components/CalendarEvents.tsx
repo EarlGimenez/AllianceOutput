@@ -1,13 +1,14 @@
 export interface CalendarEvent {
   id: string;
   title: string;
-  startTime: string; // Format: "HH:mm" e.g. "09:30"
-  endTime: string;   // Format: "HH:mm" e.g. "10:30"
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
   room: Room;
-  date: string;      // Format: "YYYY-MM-DD"
-  description?: string;
+  description?: string; // Add this line
+  recurrenceRule?: string; // Add this line (e.g., "RRULE:FREQ=WEEKLY;BYDAY=MO,TU;UNTIL=20251231")
+  // any other existing fields
 }
-
 export type Room = 
   | 'Meeting Room' 
   | 'School Classroom' 
