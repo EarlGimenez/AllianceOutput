@@ -15,7 +15,7 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { CalendarEvent, Room } from './CalendarEvents';
-import { createBooking, createRecurringBookings } from '../services/bookingService';
+import { checkBookingConflict } from '../services/bookingService';
 
 interface BookingFormProps {
   rooms: Room[];
@@ -61,9 +61,24 @@ const BookingForm: React.FC<BookingFormProps> = ({
   onDelete, // Added onDelete prop
 }) => {
   const [title, setTitle] = useState(initialData?.title || '');
-  const [date, setDate] = useState(formatDateForInput(initialData?.date || currentDate));
-  const [startTime, setStartTime] = useState(formatTimeForInput(initialData?.startTime) || '09:00');
-  const [endTime, setEndTime] = useState(formatTimeForInput(initialData?.endTime) || '10:00');
+  // In BookingForm.tsx, update the useState initializations:
+
+  const [date, setDate] = useState(() => {
+    // Use initialData date if available, otherwise use currentDate
+    if (initialData?.date) return formatDateForInput(initialData.date);
+    return currentDate ? formatDateForInput(currentDate) : formatDateForInput(new Date());
+  });
+
+  const [startTime, setStartTime] = useState(() => {
+    const initialTime = initialData?.startTime;
+    return initialTime ? formatTimeForInput(initialTime) : '09:00';
+  });
+
+  const [endTime, setEndTime] = useState(() => {
+    const initialTime = initialData?.endTime;
+    // If no initial end time, set it to 1 hour after start time
+    return initialTime ? formatTimeForInput(initialTime) : '10:00';
+  });
   const [selectedRoom, setSelectedRoom] = useState<string>(initialData?.room || (rooms.length > 0 ? rooms[0] : ''));
   const [description, setDescription] = useState(initialData?.description || '');
 
@@ -73,6 +88,40 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [weeklyDays, setWeeklyDays] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Add this to the BookingForm.tsx's recurrence section
+useEffect(() => {
+  if (isRecurring && recurrenceType !== 'none') {
+    const checkConflicts = async () => {
+      try {
+        const { hasConflict } = await checkBookingConflict(
+          selectedRoom as Room,
+          date || formatDateForInput(currentDate) || '',
+          startTime,
+          endTime,
+          generateRecurrenceRule(),
+          initialData?.id
+        );
+        
+        if (hasConflict) {
+          setErrors(prev => ({
+            ...prev,
+            recurrence: 'This recurring booking conflicts with existing bookings'
+          }));
+        } else if (errors.recurrence) {
+          const newErrors = { ...errors };
+          delete newErrors.recurrence;
+          setErrors(newErrors);
+        }
+      } catch (error) {
+        console.error('Error checking recurring conflicts:', error);
+      }
+    };
+    
+    const debounceTimer = setTimeout(checkConflicts, 500);
+    return () => clearTimeout(debounceTimer);
+  }
+}, [isRecurring, recurrenceType, selectedRoom, date, startTime, endTime, weeklyDays]);
 
   useEffect(() => {
     setTitle(initialData?.title || '');
@@ -117,7 +166,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setDate(formatDateForInput(initialData?.date || currentDate));
   }, [initialData?.date, currentDate]);
 
-  // Update the validate function
+// Update the validate function
 const validate = (): boolean => {
   const newErrors: { [key: string]: string } = {};
   
@@ -125,7 +174,7 @@ const validate = (): boolean => {
   if (!title.trim()) newErrors.title = 'Title is required';
   if (!startTime) newErrors.startTime = 'Start time required';
   if (!endTime) newErrors.endTime = 'End time required';
-  if (startTime >= endTime) newErrors.endTime = 'Must be after start';
+  if (startTime >= endTime) newErrors.endTime = 'End time must be after start time';
   if (!selectedRoom) newErrors.room = 'Room required';
 
   // Date validation
@@ -159,30 +208,69 @@ const handleSubmit = async (event: React.FormEvent) => {
   const userId = localStorage.getItem('userId') || '';
   const bookingDate = date || formatDateForInput(currentDate) || '';
   
-  const bookingData: Partial<CalendarEvent> = {
-    id: initialData?.id,
-    title,
-    date: bookingDate,
-    startTime,
-    endTime,
-    room: selectedRoom as Room,
-    description
-  };
-
-  if (isRecurring && recurrenceType !== 'none') {
-    let rrule = `RRULE:FREQ=${recurrenceType.toUpperCase()}`;
-    if (recurrenceType === 'weekly' && weeklyDays.length > 0) {
-      rrule += `;BYDAY=${weeklyDays.join(',')}`;
-    }
-    // Add 1 month limit
-    const endDate = new Date(bookingDate);
-    endDate.setMonth(endDate.getMonth() + 1);
-    rrule += `;UNTIL=${endDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
+  try {
+    const recurrenceRule = isRecurring && recurrenceType !== 'none' ? generateRecurrenceRule() : undefined;
     
-    bookingData.recurrenceRule = rrule;
+    // Check for conflicts
+    const { hasConflict, conflictingEvents } = await checkBookingConflict(
+      selectedRoom as Room,
+      bookingDate,
+      startTime,
+      endTime,
+      recurrenceRule,
+      initialData?.id
+    );
+
+    if (hasConflict) {
+      const conflictMessage = `Conflict with existing booking(s):\n${
+        conflictingEvents.map(e => 
+          `${e.title} (${e.date} ${e.startTime}-${e.endTime}${e.recurrenceRule ? ' (Recurring)' : ''})`
+        ).join('\n')
+      }`;
+      alert(conflictMessage);
+      return;
+    }
+
+    const bookingData: Partial<CalendarEvent> = {
+      id: initialData?.id,
+      title,
+      date: bookingDate,
+      startTime,
+      endTime,
+      room: selectedRoom as Room,
+      description,
+      userId,
+      recurrenceRule
+    };
+
+    onSubmit(bookingData);
+  } catch (error) {
+    console.error('Error checking booking conflicts:', error);
+    alert('Error checking for booking conflicts. Please try again.');
+  }
+};
+
+// Add this helper function to generate recurrence rule
+const generateRecurrenceRule = (): string => {
+  let rrule = `RRULE:FREQ=${recurrenceType.toUpperCase()}`;
+  
+  // Add weekly days if applicable
+  if (recurrenceType === 'weekly' && weeklyDays.length > 0) {
+    rrule += `;BYDAY=${weeklyDays.join(',')}`;
   }
 
-  onSubmit(bookingData);
+  // Use user-provided end date if available, otherwise default to 1 month
+  if (recurrenceEndDate) {
+    const endDate = new Date(recurrenceEndDate);
+    endDate.setHours(23, 59, 59, 999); // Include the entire end date
+    rrule += `;UNTIL=${endDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
+  } else {
+    const defaultEndDate = new Date(date || currentDate || new Date());
+    defaultEndDate.setMonth(defaultEndDate.getMonth() + 1);
+    rrule += `;UNTIL=${defaultEndDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
+  }
+  
+  return rrule;
 };
 
   const handleIsRecurringChange = (checked: boolean) => {
@@ -269,19 +357,22 @@ const dayOptions = [
           />
         </Grid>
         {isRecurring && recurrenceType !== 'none' && (
-            <Grid item xs={12} sm={6}>
-                <TextField
-                    fullWidth
-                    id="recurrenceEndDate"
-                    label="Recurrence End Date"
-                    type="date"
-                    value={recurrenceEndDate}
-                    onChange={(e) => { setRecurrenceEndDate(e.target.value); if (errors.recurrenceEndDate) setErrors(prev => ({...prev, recurrenceEndDate: ''}));}}
-                    InputLabelProps={{ shrink: true }}
-                    helperText={errors.recurrenceEndDate || "Optional. Leave blank for indefinite recurrence."}
-                    error={!!errors.recurrenceEndDate}
-                />
-            </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              id="recurrenceEndDate"
+              label="Recurrence End Date"
+              type="date"
+              value={recurrenceEndDate}
+              onChange={(e) => { 
+                setRecurrenceEndDate(e.target.value); 
+                if (errors.recurrenceEndDate) setErrors(prev => ({...prev, recurrenceEndDate: ''}));
+              }}
+              InputLabelProps={{ shrink: true }}
+              helperText={errors.recurrenceEndDate || "Optional. Leave blank for default 1 month duration."}
+              error={!!errors.recurrenceEndDate}
+            />
+          </Grid>
         )}
         <Grid item xs={12} sm={6}>
           <TextField
@@ -401,7 +492,7 @@ const dayOptions = [
 
         <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, mt: 2 }}>
           <Box>
-            {initialData?.id && onDelete && (
+            {initialData?.id && onDelete && initialData.userId === localStorage.getItem('userId') && (
               <Button 
                 onClick={() => onDelete(initialData!.id!)} 
                 variant="outlined" 

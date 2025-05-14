@@ -25,11 +25,11 @@ const SignIn: React.FC = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  // Update the SignIn component's handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      // Fetch users from db.json (via json-server)
       const res = await fetch("http://localhost:3001/users?email=" + email);
       const users = await res.json();
 
@@ -46,9 +46,10 @@ const SignIn: React.FC = () => {
         return;
       }
 
-      // Save auth status (you can also store user info)
       localStorage.setItem("userAuthenticated", "true");
-      navigate("/user-profile"); // or wherever your user dashboard is
+      localStorage.setItem("userId", user.id); // Store user ID
+      localStorage.setItem("userEmail", user.email); // Optional: store email for display
+      navigate("/user-profile");
     } catch (err) {
       console.error("Login error", err);
       setError("Something went wrong. Please try again.");

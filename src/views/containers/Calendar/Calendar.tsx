@@ -24,6 +24,19 @@ import { LandingNav } from '../../components/LandingNav';
 import BookingForm from '../../components/BookingForm';
 import { createBooking, updateBooking, deleteBooking } from '../../services/bookingService';
 
+  const generateBookingColor = (id: string, alpha = 0.7) => {
+    // Create a consistent color based on booking id
+    const hash = id.split('').reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+    
+    const hue = Math.abs(hash % 360);
+    // Use blue-ish tones (200-260 degrees)
+    const adjustedHue = (hue % 60) + 200;
+    
+    return `hsla(${adjustedHue}, 80%, 60%, ${alpha})`;
+  };
+
 interface CalendarProps {
   events: CalendarEvent[];
   currentDate: Date;
@@ -281,172 +294,204 @@ const handleConfirmDelete = async () => {
     };
   }, [view, currentDate, setCurrentDate, isBookingFormOpen, popoverAnchorEl, deleteConfirmOpen]);
 
-  const renderMonthView = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDayOfMonth = new Date(year, month, 1);
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startDayOffset = firstDayOfMonth.getDay();
-    const cells = [];
+// Update the month view rendering logic
+const renderMonthView = () => {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const firstDayOfMonth = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDayOffset = firstDayOfMonth.getDay();
+  const cells = [];
 
-    for (let i = 0; i < startDayOffset; i++) {
-      cells.push(
-        <Paper
-          variant="outlined"
-          square
-          key={`empty-start-${i}`}
-          sx={{
-            minHeight: { xs: 80, sm: 100, md: 120 },
-            p: 1,
-            boxSizing: 'border-box',
-            bgcolor: 'grey.50',
-            border: '1px solid transparent',
-          }}
-        />
-      );
-    }
+  // Add empty cells for leading days
+  for (let i = 0; i < startDayOffset; i++) {
+    cells.push(
+      <Paper
+        variant="outlined"
+        square
+        key={`empty-start-${i}`}
+        sx={{
+          minHeight: { xs: 80, sm: 100, md: 120 },
+          p: 1,
+          boxSizing: 'border-box',
+          bgcolor: 'grey.50',
+          border: '1px solid transparent',
+        }}
+      />
+    );
+  }
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const cellDate = new Date(year, month, day);
-      const isCurrentSelectedDate = cellDate.toDateString() === currentDate.toDateString();
+  // Generate dates for the month
+  const monthDates = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    monthDates.push(new Date(year, month, day));
+  }
 
-    // Update the event filtering logic
-    const eventsForDay = events.filter(event => {
-      const eventDate = new Date(event.date + 'T00:00:00');
-      const displayDate = new Date(currentDate);
-      displayDate.setHours(0, 0, 0, 0);
+  // Create cells for each day
+  monthDates.forEach((date, index) => {
+    const cellDate = date;
+    const isCurrentSelectedDate = cellDate.toDateString() === currentDate.toDateString();
 
-      // Check if it's the exact date match
-      if (eventDate.toDateString() === displayDate.toDateString()) {
-        return true;
-      }
+// Update the event filtering logic in renderMonthView()
+const eventsForDay = events.filter(event => {
+  const eventDate = new Date(event.date);
+  const displayDate = new Date(date); // The cell date we're rendering
+  
+  // Check if it's the exact date match for non-recurring events
+  if (!event.recurrenceRule) {
+    return eventDate.toDateString() === displayDate.toDateString();
+  }
 
-      // Check for recurring events
-      if (event.recurrenceRule) {
-        const rule = event.recurrenceRule;
-        const startDate = new Date(event.date + 'T00:00:00');
-        
-        // Check if before start date
-        if (displayDate < startDate) return false;
+  // For recurring events, check if they should appear on this date
+  const rule = event.recurrenceRule;
+  
+  // Parse recurrence rule components
+  const freqMatch = rule.match(/FREQ=([A-Z]+)/);
+  const freq = freqMatch ? freqMatch[1] : 'DAILY';
+  
+  const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+  const days = byDayMatch ? byDayMatch[1].split(',') : [];
+  
+  const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+  const untilDate = untilMatch ? new Date(
+    untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+  ) : null;
 
-        // Check recurrence rules
-        if (rule.includes('FREQ=DAILY')) {
-          return true;
-        }
-        else if (rule.includes('FREQ=WEEKLY')) {
-          const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-          const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
-          return byDayMatch ? byDayMatch[1].split(',').includes(currentDay) : 
-                displayDate.getDay() === startDate.getDay();
-        }
-        else if (rule.includes('FREQ=MONTHLY')) {
-          return displayDate.getDate() === startDate.getDate();
-        }
-      }
+  // Check if display date is before event start date
+  if (displayDate < eventDate) return false;
+  
+  // Check if display date is after until date (if specified)
+  if (untilDate && displayDate > untilDate) return false;
 
-      return false;
-    });
-      cells.push(
-        <Paper
-          elevation={isCurrentSelectedDate ? 4 : 1}
-          square
-          key={`day-${day}`}
-          aria-owns={openPopover && popoverDate?.getTime() === cellDate.getTime() ? popoverId : undefined}
-          aria-haspopup="true"
-          onMouseEnter={(e) => eventsForDay.length > 0 && handlePopoverOpen(e, eventsForDay, cellDate)}
-          onClick={() => handleDayClickInMonthView(cellDate)}
-          sx={{
-            minHeight: { xs: 80, sm: 100, md: 120 },
-            p: 1,
-            boxSizing: 'border-box',
-            bgcolor: isCurrentSelectedDate ? theme.palette.primary.light : (eventsForDay.length > 0 ? theme.palette.action.hover : theme.palette.background.paper),
-            color: isCurrentSelectedDate ? theme.palette.primary.contrastText : theme.palette.text.primary,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            cursor: 'pointer',
-            border: isCurrentSelectedDate ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
-            position: 'relative',
-            overflow: 'hidden',
-            '&:hover': {
-              bgcolor: isCurrentSelectedDate ? theme.palette.primary.main : theme.palette.secondary.light,
-              color: isCurrentSelectedDate ? theme.palette.primary.contrastText : theme.palette.secondary.contrastText,
-              borderColor: isCurrentSelectedDate ? theme.palette.primary.dark : theme.palette.secondary.main,
-            },
-            transition: 'background-color 0.2s, border-color 0.2s, box-shadow 0.2s',
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold', alignSelf: 'flex-end', mb: 0.5, color: isCurrentSelectedDate ? 'inherit' : 'text.secondary' }}>
-            {day}
-          </Typography>
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', width: '100%' }}>
-            {eventsForDay.slice(0, 2).map(event => (
-              <Typography
-                key={event.id}
-                variant="caption"
-                display="block"
-                sx={{
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  bgcolor: isCurrentSelectedDate ? 'rgba(255,255,255,0.2)' : theme.palette.primary.main,
-                  color: isCurrentSelectedDate ? 'inherit' : theme.palette.primary.contrastText,
-                  p: '2px 4px',
-                  borderRadius: '4px',
-                  mb: '2px',
-                  fontSize: '0.65rem',
-                }}
-              >
-                {event.title}
-              </Typography>
-            ))}
-            {eventsForDay.length > 2 && (
-              <Typography variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', mt: 0.5, color: isCurrentSelectedDate ? 'inherit' : 'text.secondary' }}>
-                +{eventsForDay.length - 2} more
-              </Typography>
-            )}
-          </Box>
-        </Paper>
-      );
-    }
+  // Check recurrence pattern
+  if (freq === 'DAILY') {
+    return true;
+  } else if (freq === 'WEEKLY') {
+    const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
+    return days.length === 0 || days.includes(currentDay);
+  } else if (freq === 'MONTHLY') {
+    return displayDate.getDate() === eventDate.getDate();
+  }
 
-    const totalGridCells = Math.max(35, Math.ceil((startDayOffset + daysInMonth) / 7) * 7);
-    while (cells.length < totalGridCells) {
-      cells.push(
-        <Paper
-          variant="outlined"
-          square
-          key={`empty-end-${cells.length}`}
-          sx={{
-            minHeight: { xs: 80, sm: 100, md: 120 },
-            p: 1,
-            boxSizing: 'border-box',
-            bgcolor: 'grey.50',
-            border: '1px solid transparent',
-          }}
-        />
-      );
-    }
+  return false;
+});
 
-    return (
-      <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
-          {dayLabelsShort.map(dayName => (
+    cells.push(
+      <Paper
+        elevation={isCurrentSelectedDate ? 4 : 1}
+        square
+        key={`day-${index}`}
+        aria-owns={openPopover && popoverDate?.getTime() === cellDate.getTime() ? popoverId : undefined}
+        aria-haspopup="true"
+        onMouseEnter={(e) => eventsForDay.length > 0 && handlePopoverOpen(e, eventsForDay, cellDate)}
+        onClick={() => handleDayClickInMonthView(cellDate)}
+        sx={{
+          minHeight: { xs: 80, sm: 100, md: 120 },
+          p: 1,
+          boxSizing: 'border-box',
+          bgcolor: isCurrentSelectedDate ? theme.palette.primary.light : (eventsForDay.length > 0 ? theme.palette.action.hover : theme.palette.background.paper),
+          color: isCurrentSelectedDate ? theme.palette.primary.contrastText : theme.palette.text.primary,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          cursor: 'pointer',
+          border: isCurrentSelectedDate ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
+          position: 'relative',
+          overflow: 'hidden',
+          '&:hover': {
+            bgcolor: isCurrentSelectedDate ? theme.palette.primary.main : theme.palette.secondary.light,
+            color: isCurrentSelectedDate ? theme.palette.primary.contrastText : theme.palette.secondary.contrastText,
+            borderColor: isCurrentSelectedDate ? theme.palette.primary.dark : theme.palette.secondary.main,
+          },
+        }}
+      >
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', alignSelf: 'flex-end', mb: 0.5, color: isCurrentSelectedDate ? 'inherit' : 'text.secondary' }}>
+          {cellDate.getDate()}
+        </Typography>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto', width: '100%' }}>
+          {eventsForDay.slice(0, 2).map(event => (
             <Typography
-              key={dayName}
+              key={event.id}
               variant="caption"
-              sx={{ textAlign: 'center', p: { xs: 0.5, sm: 1 }, color: 'text.secondary', fontWeight: 'medium' }}
+              display="block"
+              sx={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                bgcolor: generateBookingColor(event.id),
+                color: 'white',
+                p: '2px 4px',
+                borderRadius: '4px',
+                mb: '2px',
+              }}
             >
-              {dayName}
+              {event.title}
             </Typography>
           ))}
+          {eventsForDay.length > 2 && (
+            <Typography variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', mt: 0.5, color: isCurrentSelectedDate ? 'inherit' : 'text.secondary' }}>
+              +{eventsForDay.length - 2} more
+            </Typography>
+          )}
         </Box>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 } }}>
-          {cells}
-        </Box>
-      </Box>
+      </Paper>
     );
-  };
+  });
+
+  return (
+    <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
+        {dayLabelsShort.map(dayName => (
+          <Typography
+            key={dayName}
+            variant="caption"
+            sx={{ textAlign: 'center', p: { xs: 0.5, sm: 1 }, color: 'text.secondary', fontWeight: 'medium' }}
+          >
+            {dayName}
+          </Typography>
+        ))}
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 } }}>
+        {cells}
+      </Box>
+    </Box>
+  );
+};
+
+  // Add this helper function to Calendar.tsx
+const getRecurrenceDates = (startDate: Date, recurrenceRule: string) => {
+  const dates = [startDate];
+  const rule = recurrenceRule;
+  
+  const freqMatch = rule.match(/FREQ=([A-Z]+)/);
+  const freq = freqMatch ? freqMatch[1] : 'DAILY';
+  
+  const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+  const byDay = byDayMatch ? byDayMatch[1].split(',') : [];
+  
+  const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+  const untilDate = untilMatch ? new Date(
+    untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+  ) : null;
+
+  let currentDate = new Date(startDate);
+  while (untilDate ? currentDate <= untilDate : dates.length < 30) {
+    if (freq === 'DAILY') {
+      currentDate.setDate(currentDate.getDate() + 1);
+    } else if (freq === 'WEEKLY') {
+      currentDate.setDate(currentDate.getDate() + 7);
+    } else if (freq === 'MONTHLY') {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+
+    if (untilDate && currentDate > untilDate) break;
+    if (dates.length >= 30) break; // Max 30 days
+
+    dates.push(new Date(currentDate));
+  }
+
+  return dates;
+};
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -576,16 +621,23 @@ const handleConfirmDelete = async () => {
                             return false; 
                         })
                         .map(event => (
+                          // Update the event rendering in day view
                           <Paper
                             elevation={2}
                             key={event.id}
                             sx={{
-                              position: 'absolute', left: '4px', right: '4px',
+                              position: 'absolute', 
+                              left: '4px', 
+                              right: '4px',
                               top: calculateEventPosition(event.startTime),
                               height: calculateEventHeight(event.startTime, event.endTime),
-                              bgcolor: 'primary.main', color: 'primary.contrastText',
-                              p: 1, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
-                              '&:hover': { bgcolor: 'primary.dark' },
+                              bgcolor: generateBookingColor(event.id), // Use generated color
+                              color: 'white',
+                              p: 1, 
+                              borderRadius: 1, 
+                              overflow: 'hidden', 
+                              cursor: 'pointer',
+                              '&:hover': { opacity: 0.9 },
                             }}
                             onClick={() => handleEventInteraction(event)}
                           >
