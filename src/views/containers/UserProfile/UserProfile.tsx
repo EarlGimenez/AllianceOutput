@@ -96,6 +96,16 @@ export const UserProfile: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false)
+  const [formDate, setFormDate] = useState<Date | undefined>(selectedDate)
+  const [newBookingData, setNewBookingData] = useState<Partial<Booking>>({
+    room: "",
+    startTime: "",
+    endTime: "",
+    location: "",
+    date: selectedDate,
+    color: "primary"
+  })
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const navigate = useNavigate()
@@ -130,6 +140,45 @@ export const UserProfile: React.FC = () => {
       color: "secondary",
     },
   ])
+
+  const handleCreateButtonClick = () => {
+    setFormDate(selectedDate)
+    setNewBookingData({
+      room: "",
+      startTime: "",
+      endTime: "",
+      location: "",
+      date: selectedDate,
+      color: "primary"
+    })
+    setIsBookingFormOpen(true)
+  }
+
+  const handleCloseBookingForm = () => {
+    setIsBookingFormOpen(false)
+  }
+
+  const handleBookingSubmit = () => {
+    const newBooking: Booking = {
+      id: Math.random().toString(36).substring(2, 9),
+      room: newBookingData.room || "Unknown Room",
+      startTime: newBookingData.startTime || "",
+      endTime: newBookingData.endTime || "",
+      location: newBookingData.location || "",
+      date: newBookingData.date || new Date(),
+      color: newBookingData.color || "primary"
+    }
+
+    setBookings([...bookings, newBooking])
+    setIsBookingFormOpen(false)
+  }
+
+  const handleNewBookingChange = (field: keyof Booking, value: string | Date) => {
+    setNewBookingData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
 
   // Filter bookings for the selected date or all if showAllBookings is true
   const filteredBookings = showAllBookings
@@ -397,7 +446,7 @@ export const UserProfile: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => console.log("Create booking")}
+              onClick={handleCreateButtonClick}
               sx={{
                 backgroundColor: "#1e5393",
                 "&:hover": {
@@ -804,6 +853,109 @@ export const UserProfile: React.FC = () => {
             }}
           >
             Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Booking Dialog */}
+      <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Booking</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1 }}>
+            <TextField
+              margin="dense"
+              id="new-room"
+              label="Room"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={newBookingData.room}
+              onChange={(e) => handleNewBookingChange("room", e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <TextField
+                  margin="dense"
+                  id="new-date"
+                  label="Date"
+                  type="date"
+                  fullWidth
+                  variant="outlined"
+                  value={newBookingData.date?.toISOString().split("T")[0] || ""}
+                  onChange={(e) => handleNewBookingChange("date", new Date(e.target.value))}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel id="new-color-label">Color</InputLabel>
+                  <Select
+                    labelId="new-color-label"
+                    id="new-color"
+                    value={newBookingData.color}
+                    label="Color"
+                    onChange={(e) => handleNewBookingChange("color", e.target.value)}
+                  >
+                    <MenuItem value="primary">Blue</MenuItem>
+                    <MenuItem value="secondary">Purple</MenuItem>
+                    <MenuItem value="success">Green</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <TextField
+                  margin="dense"
+                  id="new-startTime"
+                  label="Start Time"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={newBookingData.startTime}
+                  onChange={(e) => handleNewBookingChange("startTime", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  margin="dense"
+                  id="new-endTime"
+                  label="End Time"
+                  type="text"
+                  fullWidth
+                  variant="outlined"
+                  value={newBookingData.endTime}
+                  onChange={(e) => handleNewBookingChange("endTime", e.target.value)}
+                />
+              </Grid>
+            </Grid>
+            <TextField
+              margin="dense"
+              id="new-location"
+              label="Location"
+              type="text"
+              fullWidth
+              variant="outlined"
+              value={newBookingData.location}
+              onChange={(e) => handleNewBookingChange("location", e.target.value)}
+              sx={{ mt: 1 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseBookingForm}>Cancel</Button>
+          <Button
+            onClick={handleBookingSubmit}
+            variant="contained"
+            sx={{
+              backgroundColor: "#1e5393",
+              "&:hover": {
+                backgroundColor: "#164279",
+              },
+            }}
+          >
+            Create Booking
           </Button>
         </DialogActions>
       </Dialog>
