@@ -1,3 +1,4 @@
+// MODULE DEPRECATED - HAS NO USE
 import React from 'react';
 import { CalendarEvent, Room } from './CalendarEvents';
 // import Button from './Button'; // Removed since Button component is no longer available

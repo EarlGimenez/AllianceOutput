@@ -12,14 +12,9 @@ const PublicCalendar = () => {
 useEffect(() => {
   const fetchBookings = async () => {
     try {
-      const dateStr = new Date(currentDate).toISOString().split('T')[0];
+      const userId = localStorage.getItem('userId');
       const bookings = await getBookings();
-      setEvents(bookings.filter(b => {
-        // Filter for events that occur on the current month
-        const eventDate = new Date(b.date);
-        return eventDate.getMonth() === currentDate.getMonth() && 
-               eventDate.getFullYear() === currentDate.getFullYear();
-      }));
+      setEvents(bookings);
     } catch (error) {
       console.error('Error loading bookings:', error);
     }

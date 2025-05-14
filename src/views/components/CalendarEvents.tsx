@@ -1,14 +1,16 @@
+// In CalendarEvents.tsx
 export interface CalendarEvent {
   id: string;
   title: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM
-  endTime: string; // HH:MM
+  date: string;
+  startTime: string;
+  endTime: string;
   room: Room;
-  description?: string; // Add this line
-  recurrenceRule?: string; // Add this line (e.g., "RRULE:FREQ=WEEKLY;BYDAY=MO,TU;UNTIL=20251231")
-  // any other existing fields
+  description?: string;
+  recurrenceRule?: string;
+  userId: string; // Add this line
 }
+
 export type Room = 
   | 'Meeting Room' 
   | 'School Classroom' 

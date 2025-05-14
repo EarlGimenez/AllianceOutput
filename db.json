@@ -127,10 +127,10 @@
       "username": "test",
       "fullName": "test",
       "company": "test",
-      "password": "testtest"
+      "password": "$2b$10$1dKoos6vRur0XKGRNGNUqed1cIES/sQIiXqFEmmEjYw/LXLS0vqKu"
     },
     {
-      "id": 1747150009906,
+      "id": "1747150009906",
       "firstName": "test2",
       "lastName": "test",
       "email": "test2@test.com",
@@ -139,15 +139,55 @@
   ],
   "bookings": [
     {
-      "id": "c1e2",
+      "id": "0acd",
       "title": "test",
-      "date": "2025-05-13",
+      "date": "2025-05-14",
       "startTime": "09:00",
       "endTime": "10:00",
       "room": "Meeting Room",
       "description": "",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250613T000000Z",
-      "userId": ""
+      "userId": "1747150009906"
+    },
+    {
+      "id": "9c66",
+      "title": "test",
+      "date": "2025-05-14",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "room": "Meeting Room",
+      "description": "",
+      "userId": "1747150009906"
+    },
+    {
+      "id": "67a1",
+      "title": "test",
+      "date": "2025-05-14",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "room": "School Classroom",
+      "description": "testtest",
+      "userId": "1747150009906"
+    },
+    {
+      "id": "ed4c",
+      "title": "3test",
+      "date": "2025-05-14",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "room": "Professional Studio",
+      "description": "",
+      "userId": "1747150009906",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250614T000000Z"
+    },
+    {
+      "id": "a573",
+      "title": "test",
+      "date": "2025-05-14",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "room": "Meeting Room",
+      "description": "",
+      "userId": "1747150009906"
     }
   ]
 }
