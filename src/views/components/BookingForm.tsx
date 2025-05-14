@@ -188,12 +188,12 @@ const validate = (): boolean => {
   }
 
   // Recurrence validation
-  if (isRecurring) {
-    if (recurrenceType === 'none') {
-      newErrors.recurrenceType = 'Select recurrence type';
-    }
-    if (recurrenceType === 'weekly' && weeklyDays.length === 0) {
-      newErrors.weeklyDays = 'Select at least one day';
+if (isRecurring && recurrenceType !== 'none' && recurrenceEndDate) {
+    const endDate = new Date(recurrenceEndDate);
+    const startDate = new Date(date || currentDate || new Date());
+    
+    if (endDate < startDate) {
+      newErrors.recurrenceEndDate = 'End date must be after start date';
     }
   }
 
@@ -259,12 +259,13 @@ const generateRecurrenceRule = (): string => {
     rrule += `;BYDAY=${weeklyDays.join(',')}`;
   }
 
-  // Use user-provided end date if available, otherwise default to 1 month
+  // Handle end date - prioritize user-provided end date if it exists
   if (recurrenceEndDate) {
     const endDate = new Date(recurrenceEndDate);
-    endDate.setHours(23, 59, 59, 999); // Include the entire end date
+    endDate.setHours(23, 59, 59); // Set to end of day
     rrule += `;UNTIL=${endDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
   } else {
+    // Default to 1 month limit only if no end date is provided
     const defaultEndDate = new Date(date || currentDate || new Date());
     defaultEndDate.setMonth(defaultEndDate.getMonth() + 1);
     rrule += `;UNTIL=${defaultEndDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
@@ -356,24 +357,27 @@ const dayOptions = [
             disabled={isRecurring && recurrenceType === 'none'}
           />
         </Grid>
-        {isRecurring && recurrenceType !== 'none' && (
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              id="recurrenceEndDate"
-              label="Recurrence End Date"
-              type="date"
-              value={recurrenceEndDate}
-              onChange={(e) => { 
-                setRecurrenceEndDate(e.target.value); 
-                if (errors.recurrenceEndDate) setErrors(prev => ({...prev, recurrenceEndDate: ''}));
-              }}
-              InputLabelProps={{ shrink: true }}
-              helperText={errors.recurrenceEndDate || "Optional. Leave blank for default 1 month duration."}
-              error={!!errors.recurrenceEndDate}
-            />
-          </Grid>
-        )}
+          {isRecurring && recurrenceType !== 'none' && (
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                id="recurrenceEndDate"
+                label="Recurrence End Date"
+                type="date"
+                value={recurrenceEndDate}
+                onChange={(e) => { 
+                  setRecurrenceEndDate(e.target.value); 
+                  if (errors.recurrenceEndDate) setErrors(prev => ({...prev, recurrenceEndDate: ''}));
+                }}
+                InputLabelProps={{ shrink: true }}
+                helperText={errors.recurrenceEndDate || "Optional. Leave blank for default 1 month duration."}
+                error={!!errors.recurrenceEndDate}
+                inputProps={{
+                  min: date // Ensure end date isn't before start date
+                }}
+              />
+            </Grid>
+          )}
         <Grid item xs={12} sm={6}>
           <TextField
             required
@@ -506,9 +510,11 @@ const dayOptions = [
             <Button onClick={onCancel} variant="outlined">
               Cancel
             </Button>
-            <Button type="submit" variant="contained" color="primary">
-              {initialData?.id ? 'Save Changes' : 'Create Booking'}
-            </Button>
+            {(initialData?.id ? initialData.userId === localStorage.getItem('userId') : true) && (
+              <Button type="submit" variant="contained" color="primary">
+                {initialData?.id ? 'Save Changes' : 'Create Booking'}
+              </Button>
+            )}
           </Box>
         </Grid>
       </Grid>

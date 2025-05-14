@@ -5,63 +5,16 @@
       "name": "Conference Room A",
       "location": "1st Floor, East Wing",
       "timeStart": "08:00",
-      "timeEnd": "18:00"
+      "timeEnd": "18:00",
+      "image": "https://via.placeholder.com/150?text=Conference+A"
     },
     {
       "id": "2",
-      "name": "Meeting Room 101",
+      "name": "School Classroom",
       "location": "2nd Floor, West Wing",
-      "timeStart": "09:00",
-      "timeEnd": "17:00"
-    },
-    {
-      "id": "3",
-      "name": "Board Room",
-      "location": "3rd Floor, Executive Suite",
-      "timeStart": "08:30",
-      "timeEnd": "19:00"
-    },
-    {
-      "id": "4",
-      "name": "Huddle Space 1",
-      "location": "1st Floor, North Wing",
-      "timeStart": "08:00",
-      "timeEnd": "20:00"
-    },
-    {
-      "id": "5",
-      "name": "Training Room",
-      "location": "2nd Floor, South Wing",
-      "timeStart": "09:00",
-      "timeEnd": "18:00"
-    },
-    {
-      "id": "6",
-      "name": "Creative Studio",
-      "location": "4th Floor, Design Department",
-      "timeStart": "10:00",
-      "timeEnd": "16:00"
-    },
-    {
-      "id": "7",
-      "name": "Focus Room 3",
-      "location": "2nd Floor, Quiet Zone",
-      "timeStart": "08:00",
-      "timeEnd": "18:00"
-    },
-    {
-      "id": "8",
-      "name": "Collaboration Space",
-      "location": "3rd Floor, Innovation Hub",
-      "timeStart": "09:00",
-      "timeEnd": "17:30"
-    },
-    {
-      "id": "842d",
-      "name": "test",
-      "location": "test",
-      "timeStart": "08:00",
-      "timeEnd": "18:00"
+      "timeStart": "07:00",
+      "timeEnd": "20:00",
+      "image": "https://via.placeholder.com/150?text=Classroom"
     }
   ],
   "users": [
@@ -135,6 +88,20 @@
       "lastName": "test",
       "email": "test2@test.com",
       "password": "$2b$10$1dKoos6vRur0XKGRNGNUqed1cIES/sQIiXqFEmmEjYw/LXLS0vqKu"
+    },
+    {
+      "id": 1747196196953,
+      "firstName": "test",
+      "lastName": "test",
+      "email": "test3@test.com",
+      "password": "$2b$10$x1p/udNqzPdrQrlPRNOHYeuIMrDVrKgdHLNrXG.qqnVKLt01valVS"
+    },
+    {
+      "id": 1747204166579,
+      "firstName": "test",
+      "lastName": "test",
+      "email": "nocreate@test.com",
+      "password": "$2b$10$zTlYk1Gjv65ySZpQ3MFj.ub//I4pCYJRXqBJkMChBp2AAkYVQSRqe"
     }
   ],
   "bookings": [
@@ -177,7 +144,7 @@
       "room": "Professional Studio",
       "description": "",
       "userId": "1747150009906",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250614T000000Z"
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250614T155959Z"
     },
     {
       "id": "a573",
@@ -188,6 +155,17 @@
       "room": "Meeting Room",
       "description": "",
       "userId": "1747150009906"
+    },
+    {
+      "id": "82da",
+      "title": "test",
+      "date": "2025-05-14",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "room": "Science Lab",
+      "description": "",
+      "userId": "1747150009906",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250516T155959Z"
     }
   ]
 }

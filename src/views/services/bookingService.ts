@@ -23,6 +23,21 @@ const timeRangesOverlap = (start1: string, end1: string, start2: string, end2: s
   return s1 < e2 && s2 < e1;
 };
 
+// Helper function to parse recurrence rules
+const parseRecurrenceRule = (rule: string) => {
+  const freqMatch = rule.match(/FREQ=([A-Z]+)/);
+  const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+  const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+  
+  return {
+    freq: freqMatch ? freqMatch[1] : 'DAILY',
+    days: byDayMatch ? byDayMatch[1].split(',') : [],
+    until: untilMatch ? new Date(
+      untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+    ) : null
+  };
+};
+
 export const getBookings = async (userId?: string): Promise<CalendarEvent[]> => {
   let url = API_URL;
   if (userId) {
@@ -134,20 +149,6 @@ export const checkBookingConflict = async (
   try {
     const allBookings = await getBookings();
     const conflictingEvents: CalendarEvent[] = [];
-
-    const parseRecurrenceRule = (rule: string) => {
-      const freqMatch = rule.match(/FREQ=([A-Z]+)/);
-      const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-      const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-      
-      return {
-        freq: freqMatch ? freqMatch[1] : 'DAILY',
-        days: byDayMatch ? byDayMatch[1].split(',') : [],
-        until: untilMatch ? new Date(
-          untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-        ) : null
-      };
-    };
 
     const getRecurringDates = (startDate: Date, rule: ReturnType<typeof parseRecurrenceRule>) => {
       const dates: Date[] = [];
@@ -296,19 +297,4 @@ export const createRecurringBookings = async (
     console.error('Error creating recurring bookings:', error);
     throw error;
   }
-};
-
-// Helper function to parse recurrence rules (used internally)
-const parseRecurrenceRule = (rule: string) => {
-  const freqMatch = rule.match(/FREQ=([A-Z]+)/);
-  const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-  const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-  
-  return {
-    freq: freqMatch ? freqMatch[1] : 'DAILY',
-    days: byDayMatch ? byDayMatch[1].split(',') : [],
-    until: untilMatch ? new Date(
-      untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-    ) : null
-  };
 };
