@@ -1,41 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Divider,
+import { 
+  Box, 
+  Paper, 
+  useTheme, 
   Button,
-  Popover,
-  List,
-  ListItem,
-  ListItemText,
-  Link,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions, // Added DialogActions
-  useTheme,
+  Typography,
+  Divider,
+  DialogActions
 } from '@mui/material';
-import { CalendarEvent, Room } from '../../components/CalendarEvents';
+import { CalendarEvent } from '../../components/CalendarEvents';
 import { LandingNav } from '../../components/LandingNav';
 import BookingForm from '../../components/BookingForm';
 import { createBooking, updateBooking, deleteBooking } from '../../services/bookingService';
+import { getRooms, Room } from '../../services/roomService';
+import CalendarHeader from '../../components/CalendarHeader';
+import CalendarSidebar from '../../components/CalendarSidebar';
+import DayView from '../../components/DayView';
+import MonthView from '../../components/MonthView';
+import EventPopover from '../../components/EventPopover';
 
-  const generateBookingColor = (id: string, alpha = 0.7) => {
-    // Create a consistent color based on booking id
-    const hash = id.split('').reduce((acc, char) => {
-      return char.charCodeAt(0) + ((acc << 5) - acc);
-    }, 0);
-    
-    const hue = Math.abs(hash % 360);
-    // Use blue-ish tones (200-260 degrees)
-    const adjustedHue = (hue % 60) + 200;
-    
-    return `hsla(${adjustedHue}, 80%, 60%, ${alpha})`;
-  };
+const generateBookingColor = (id: string, alpha = 0.7) => {
+  const hash = id.split('').reduce((acc, char) => {
+    return char.charCodeAt(0) + ((acc << 5) - acc);
+  }, 0);
+  
+  const hue = Math.abs(hash % 360);
+  const adjustedHue = (hue % 60) + 200;
+  
+  return `hsla(${adjustedHue}, 80%, 60%, ${alpha})`;
+};
 
 interface CalendarProps {
   events: CalendarEvent[];
@@ -45,7 +41,6 @@ interface CalendarProps {
   onEditEvent?: (updatedEvent: CalendarEvent) => Promise<void>;
   onDeleteEvent?: (eventId: string) => Promise<void>;
 }
-
 
 const Calendar: React.FC<CalendarProps> = ({
   events: initialEvents,
@@ -58,6 +53,21 @@ const Calendar: React.FC<CalendarProps> = ({
   const theme = useTheme();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [internalCurrentDate, setInternalCurrentDate] = useState(passedCurrentDate || new Date());
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [view, setView] = useState<'day' | 'month'>('day');
+  const [popoverAnchorEl, setPopoverAnchorEl] = useState<HTMLElement | null>(null);
+  const [popoverEvents, setPopoverEvents] = useState<CalendarEvent[]>([]);
+  const [popoverDate, setPopoverDate] = useState<Date | null>(null);
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
+  const [formDate, setFormDate] = useState<Date | undefined>(passedCurrentDate || new Date());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const roomsPerPage = 5;
 
   const currentDate = onDateChange ? passedCurrentDate : internalCurrentDate;
   const setCurrentDate = (newDate: Date) => {
@@ -69,6 +79,32 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const roomsData = await getRooms();
+        setRooms(roomsData);
+        setFilteredRooms(roomsData);
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    };
+    fetchRooms();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredRooms(rooms);
+    } else {
+      const filtered = rooms.filter(room =>
+        room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        room.location.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredRooms(filtered);
+    }
+    setCurrentPage(0); // Reset to first page when search changes
+  }, [searchQuery, rooms]);
+
+  useEffect(() => {
     setEvents(initialEvents);
   }, [initialEvents]);
 
@@ -77,31 +113,6 @@ const Calendar: React.FC<CalendarProps> = ({
       setInternalCurrentDate(passedCurrentDate || new Date());
     }
   }, [passedCurrentDate, onDateChange]);
-
-  const rooms: Room[] = [
-    'Meeting Room',
-    'School Classroom',
-    'Professional Studio',
-    'Science Lab',
-    'Coworking Space',
-  ];
-
-  const timeSlots = Array.from({ length: 15 }, (_, i) => {
-    const hour = 8 + i;
-    return `${hour.toString().padStart(2, '0')}:00`;
-  });
-  const dayLabelsShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  const [view, setView] = useState<'day' | 'month'>('day');
-  const [popoverAnchorEl, setPopoverAnchorEl] = useState<HTMLElement | null>(null);
-  const [popoverEvents, setPopoverEvents] = useState<CalendarEvent[]>([]);
-  const [popoverDate, setPopoverDate] = useState<Date | null>(null);
-  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
-  const [formDate, setFormDate] = useState<Date | undefined>(currentDate);
-
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editingEvent) {
@@ -122,9 +133,6 @@ const Calendar: React.FC<CalendarProps> = ({
   const handlePopoverClose = () => {
     setPopoverAnchorEl(null);
   };
-
-  const openPopover = Boolean(popoverAnchorEl);
-  const popoverId = openPopover ? 'month-day-popover' : undefined;
 
   const handleViewChange = (
     event: React.MouseEvent<HTMLElement>,
@@ -174,16 +182,21 @@ const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
       ? adjustToLocalDate(bookingData.date)
       : adjustToLocalDate(currentDate.toISOString());
 
+    let updatedEvents = [...events];
+    
     if (bookingData.id) {
       // Update existing booking
       const updatedBooking = await updateBooking(bookingData.id, {
         ...bookingData,
         date: bookingDate
       });
+      
       if (parentOnEditEvent) {
         await parentOnEditEvent(updatedBooking);
       } else {
-        setEvents(prev => prev.map(ev => ev.id === updatedBooking.id ? updatedBooking : ev));
+        updatedEvents = updatedEvents.map(ev => 
+          ev.id === updatedBooking.id ? updatedBooking : ev
+        );
       }
     } else {
       // Create new booking
@@ -196,9 +209,12 @@ const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
       if (parentOnAddEvent) {
         await parentOnAddEvent(newBooking);
       } else {
-        setEvents(prev => [...prev, newBooking]);
+        updatedEvents = [...updatedEvents, newBooking];
       }
     }
+
+    // Force update by creating a new array reference
+    setEvents(updatedEvents);
     handleCloseBookingForm();
   } catch (error) {
     console.error('Error saving booking:', error);
@@ -222,7 +238,6 @@ const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
   const handleRequestDelete = (eventId: string) => {
     setEventToDeleteId(eventId);
     setDeleteConfirmOpen(true);
-    // Close the booking form if it's open for the event being deleted
     if (editingEvent?.id === eventId) {
         handleCloseBookingForm();
     }
@@ -233,481 +248,117 @@ const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
     setEventToDeleteId(null);
   };
 
-const handleConfirmDelete = async () => {
-  if (!eventToDeleteId) return;
-  
-  try {
-    await deleteBooking(eventToDeleteId);
-    if (parentOnDeleteEvent) {
-      await parentOnDeleteEvent(eventToDeleteId);
-    } else {
-      setEvents(prev => prev.filter(event => event.id !== eventToDeleteId));
+  const handleConfirmDelete = async () => {
+    if (!eventToDeleteId) return;
+    
+    try {
+      await deleteBooking(eventToDeleteId);
+      if (parentOnDeleteEvent) {
+        await parentOnDeleteEvent(eventToDeleteId);
+      } else {
+        setEvents(prev => prev.filter(event => event.id !== eventToDeleteId));
+      }
+      handleCloseDeleteConfirm();
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      alert('Failed to delete booking');
     }
-    handleCloseDeleteConfirm();
-  } catch (error) {
-    console.error('Error deleting booking:', error);
-    alert('Failed to delete booking');
-  }
-};
+  };
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (view !== 'month' || isBookingFormOpen || popoverAnchorEl || deleteConfirmOpen) return;
+  const handleRoomPageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
-      let newDate = new Date(currentDate);
-      let dateChanged = false;
-
-      switch (event.key) {
-        case 'ArrowLeft':
-          newDate.setDate(newDate.getDate() - 1);
-          dateChanged = true;
-          break;
-        case 'ArrowRight':
-          newDate.setDate(newDate.getDate() + 1);
-          dateChanged = true;
-          break;
-        case 'ArrowUp':
-          newDate.setDate(newDate.getDate() - 7);
-          dateChanged = true;
-          break;
-        case 'ArrowDown':
-          newDate.setDate(newDate.getDate() + 7);
-          dateChanged = true;
-          break;
-        case 'Enter':
-          setView('day');
-          event.preventDefault();
-          return;
-        default:
-          return;
-      }
-
-      if (dateChanged) {
-        event.preventDefault();
-        setCurrentDate(newDate);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [view, currentDate, setCurrentDate, isBookingFormOpen, popoverAnchorEl, deleteConfirmOpen]);
-
-// Update the month view rendering logic
-const renderMonthView = () => {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const firstDayOfMonth = new Date(year, month, 1);
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startDayOffset = firstDayOfMonth.getDay();
-  const cells = [];
-
-  // Add empty cells for leading days
-  for (let i = 0; i < startDayOffset; i++) {
-    cells.push(
-      <Paper
-        variant="outlined"
-        square
-        key={`empty-start-${i}`}
-        sx={{
-          minHeight: { xs: 80, sm: 100, md: 120 },
-          p: 1,
-          boxSizing: 'border-box',
-          bgcolor: 'grey.50',
-          border: '1px solid transparent',
-        }}
-      />
-    );
-  }
-
-  // Generate dates for the month
-  const monthDates = [];
-  for (let day = 1; day <= daysInMonth; day++) {
-    monthDates.push(new Date(year, month, day));
-  }
-
-  // Create cells for each day
-  monthDates.forEach((date, index) => {
-    const cellDate = date;
-    const isCurrentSelectedDate = cellDate.toDateString() === currentDate.toDateString();
-
-// Update the event filtering logic in renderMonthView()
-const eventsForDay = events.filter(event => {
-  const eventDate = new Date(event.date);
-  const displayDate = new Date(date); // The cell date we're rendering
-  
-  // Check if it's the exact date match for non-recurring events
-  if (!event.recurrenceRule) {
-    return eventDate.toDateString() === displayDate.toDateString();
-  }
-
-  // For recurring events, check if they should appear on this date
-  const rule = event.recurrenceRule;
-  
-  // Parse recurrence rule components
-  const freqMatch = rule.match(/FREQ=([A-Z]+)/);
-  const freq = freqMatch ? freqMatch[1] : 'DAILY';
-  
-  const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-  const days = byDayMatch ? byDayMatch[1].split(',') : [];
-  
-  const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-  const untilDate = untilMatch ? new Date(
-    untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-  ) : null;
-
-  // Check if display date is before event start date
-  if (displayDate < eventDate) return false;
-  
-  // Check if display date is after until date (if specified)
-  if (untilDate && displayDate > untilDate) return false;
-
-  // Check recurrence pattern
-  if (freq === 'DAILY') {
-    return true;
-  } else if (freq === 'WEEKLY') {
-    const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
-    return days.length === 0 || days.includes(currentDay);
-  } else if (freq === 'MONTHLY') {
-    return displayDate.getDate() === eventDate.getDate();
-  }
-
-  return false;
-});
-
-    cells.push(
-      <Paper
-        elevation={isCurrentSelectedDate ? 4 : 1}
-        square
-        key={`day-${index}`}
-        aria-owns={openPopover && popoverDate?.getTime() === cellDate.getTime() ? popoverId : undefined}
-        aria-haspopup="true"
-        onMouseEnter={(e) => eventsForDay.length > 0 && handlePopoverOpen(e, eventsForDay, cellDate)}
-        onClick={() => handleDayClickInMonthView(cellDate)}
-        sx={{
-          minHeight: { xs: 80, sm: 100, md: 120 },
-          p: 1,
-          boxSizing: 'border-box',
-          bgcolor: isCurrentSelectedDate ? theme.palette.primary.light : (eventsForDay.length > 0 ? theme.palette.action.hover : theme.palette.background.paper),
-          color: isCurrentSelectedDate ? theme.palette.primary.contrastText : theme.palette.text.primary,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-start',
-          cursor: 'pointer',
-          border: isCurrentSelectedDate ? `2px solid ${theme.palette.primary.main}` : `1px solid ${theme.palette.divider}`,
-          position: 'relative',
-          overflow: 'hidden',
-          '&:hover': {
-            bgcolor: isCurrentSelectedDate ? theme.palette.primary.main : theme.palette.secondary.light,
-            color: isCurrentSelectedDate ? theme.palette.primary.contrastText : theme.palette.secondary.contrastText,
-            borderColor: isCurrentSelectedDate ? theme.palette.primary.dark : theme.palette.secondary.main,
-          },
-        }}
-      >
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', alignSelf: 'flex-end', mb: 0.5, color: isCurrentSelectedDate ? 'inherit' : 'text.secondary' }}>
-          {cellDate.getDate()}
-        </Typography>
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', width: '100%' }}>
-          {eventsForDay.slice(0, 2).map(event => (
-            <Typography
-              key={event.id}
-              variant="caption"
-              display="block"
-              sx={{
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                bgcolor: generateBookingColor(event.id),
-                color: 'white',
-                p: '2px 4px',
-                borderRadius: '4px',
-                mb: '2px',
-              }}
-            >
-              {event.title}
-            </Typography>
-          ))}
-          {eventsForDay.length > 2 && (
-            <Typography variant="caption" sx={{ fontSize: '0.6rem', textAlign: 'center', mt: 0.5, color: isCurrentSelectedDate ? 'inherit' : 'text.secondary' }}>
-              +{eventsForDay.length - 2} more
-            </Typography>
-          )}
-        </Box>
-      </Paper>
-    );
-  });
-
-  return (
-    <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.5 }}>
-        {dayLabelsShort.map(dayName => (
-          <Typography
-            key={dayName}
-            variant="caption"
-            sx={{ textAlign: 'center', p: { xs: 0.5, sm: 1 }, color: 'text.secondary', fontWeight: 'medium' }}
-          >
-            {dayName}
-          </Typography>
-        ))}
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: { xs: 0.5, sm: 1 } }}>
-        {cells}
-      </Box>
-    </Box>
+  const visibleRooms = filteredRooms.slice(
+    currentPage * roomsPerPage,
+    (currentPage + 1) * roomsPerPage
   );
-};
-
-  // Add this helper function to Calendar.tsx
-const getRecurrenceDates = (startDate: Date, recurrenceRule: string) => {
-  const dates = [startDate];
-  const rule = recurrenceRule;
-  
-  const freqMatch = rule.match(/FREQ=([A-Z]+)/);
-  const freq = freqMatch ? freqMatch[1] : 'DAILY';
-  
-  const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-  const byDay = byDayMatch ? byDayMatch[1].split(',') : [];
-  
-  const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-  const untilDate = untilMatch ? new Date(
-    untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-  ) : null;
-
-  let currentDate = new Date(startDate);
-  while (untilDate ? currentDate <= untilDate : dates.length < 30) {
-    if (freq === 'DAILY') {
-      currentDate.setDate(currentDate.getDate() + 1);
-    } else if (freq === 'WEEKLY') {
-      currentDate.setDate(currentDate.getDate() + 7);
-    } else if (freq === 'MONTHLY') {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
-
-    if (untilDate && currentDate > untilDate) break;
-    if (dates.length >= 30) break; // Max 30 days
-
-    dates.push(new Date(currentDate));
-  }
-
-  return dates;
-};
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <LandingNav />
-      <Box sx={{
-          flexGrow: 1,
-          bgcolor: "#D2E4FF",
-          p: { xs: 1, sm: 2, md: 3 }
-      }}>
-        <Paper
-          elevation={3}
+      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+        <CalendarSidebar
+          open={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          rooms={filteredRooms}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+
+        <Box
+          component="main"
           sx={{
-            p: { xs: 2, md: 3 },
-            overflow: 'visible',
-            height: '100%',
+            flexGrow: 1,
+            bgcolor: "#D2E4FF",
+            p: { xs: 1, sm: 2, md: 3 },
+            transition: theme.transitions.create('margin', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+            marginLeft: sidebarOpen ? '350px' : '0',
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column'
           }}
         >
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={{xs: 1, sm: 2}}
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 2 }}
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, md: 3 },
+              overflow: 'hidden',
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column'
+            }}
           >
-            <Button
-              variant="contained"
-              onClick={handleCreateButtonClick}
-              size="small"
-              sx={{ width: 'auto', minWidth: 'auto', px: 2, order: {xs: 3, sm: 1} }}
-            >
-              + Create
-            </Button>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ order: {xs: 1, sm: 2}, flexGrow: {xs: 1, sm: 0}, justifyContent: 'center' }}>
-              <Button onClick={() => handleDateNavigate('prev')} size="small">{'<'}</Button>
-              <Typography variant="h6" component="div" sx={{ textAlign: 'center', minWidth: {xs: '150px', sm:'180px'}, userSelect: 'none' }}>
-                {view === 'day'
-                  ? currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                  : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </Typography>
-              <Button onClick={() => handleDateNavigate('next')} size="small">{'>'}</Button>
-            </Stack>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ order: {xs: 2, sm: 3}}}>
-              <ToggleButtonGroup
-                value={view}
-                exclusive
-                onChange={handleViewChange}
-                aria-label="calendar view"
-                size="small"
-              >
-                <ToggleButton value="day" aria-label="day view">Day</ToggleButton>
-                <ToggleButton value="month" aria-label="month view">Month</ToggleButton>
-              </ToggleButtonGroup>
-            </Stack>
-          </Stack>
+            <CalendarHeader
+              view={view}
+              currentDate={currentDate}
+              onViewChange={handleViewChange}
+              onDateNavigate={handleDateNavigate}
+              onCreateClick={handleCreateButtonClick}
+            />
 
-          <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2 }} />
 
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', overflowX: view === 'day' ? 'auto' : 'hidden' }}>
-            {view === 'day' && (
-              <Box sx={{ display: 'flex', pb: 2 }}>
-                <Box sx={{ minWidth: '80px', pr: 1 }}>
-                  <Box sx={{ height: '40px', mb: 1 }} />
-                  {timeSlots.map(time => (
-                    <Box key={time} sx={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 1, borderTop: '1px solid', borderColor: 'divider', '&:first-of-type': { borderTop: 'none' } }}>
-                      <Typography variant="caption" color="text.secondary">{time}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-                {rooms.map(room => (
-                  <Box key={room} sx={{ minWidth: '200px', flex: '1 1 0px', borderLeft: '1px solid', borderColor: 'divider' }}>
-                    <Paper variant="outlined" square sx={{ textAlign: 'center', p: 1, height: '40px', mb:1, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>{room}</Typography>
-                    </Paper>
-                    <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` }}>
-                      {events
-                        .filter(event => {
-                            if (event.room !== room) return false;
-                            
-                            const currentDisplayDate = currentDate;
-
-                            if (!event.recurrenceRule) {
-                              return event.date === currentDisplayDate.toISOString().split('T')[0];
-                            }
-
-                            const eventSeriesStartDate = new Date(event.date);
-                            eventSeriesStartDate.setHours(0, 0, 0, 0); 
-
-                            const currentDisplayDayStart = new Date(currentDisplayDate);
-                            currentDisplayDayStart.setHours(0, 0, 0, 0);
-
-                            if (currentDisplayDayStart < eventSeriesStartDate) {
-                              return false; 
-                            }
-
-                            const untilMatch = event.recurrenceRule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-                            if (untilMatch && untilMatch[1]) {
-                              const untilDateString = untilMatch[1];
-                              const recurrenceEndDateUtc = new Date(
-                                untilDateString.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-                              );
-                              if (currentDisplayDayStart > recurrenceEndDateUtc) {
-                                return false;
-                              }
-                            }
-
-                            if (event.recurrenceRule.includes('FREQ=DAILY')) {
-                              return true;
-                            }
-
-                            if (event.recurrenceRule.includes('FREQ=WEEKLY')) {
-                              const byDayMatch = event.recurrenceRule.match(/BYDAY=([A-Z,]+)/);
-                              const currentDayOfWeekShort = dayLabelsShort[currentDisplayDayStart.getDay()].substring(0, 2).toUpperCase();
-                              if (byDayMatch && byDayMatch[1]) {
-                                const ruleDays = byDayMatch[1].split(',');
-                                return ruleDays.includes(currentDayOfWeekShort);
-                              } else {
-                                return currentDisplayDayStart.getDay() === eventSeriesStartDate.getDay();
-                              }
-                            }
-                            
-                            if (event.recurrenceRule.includes('FREQ=MONTHLY')) {
-                                return currentDisplayDayStart.getDate() === eventSeriesStartDate.getDate();
-                            }
-
-                            return false; 
-                        })
-                        .map(event => (
-                          // Update the event rendering in day view
-                          <Paper
-                            elevation={2}
-                            key={event.id}
-                            sx={{
-                              position: 'absolute', 
-                              left: '4px', 
-                              right: '4px',
-                              top: calculateEventPosition(event.startTime),
-                              height: calculateEventHeight(event.startTime, event.endTime),
-                              bgcolor: generateBookingColor(event.id), // Use generated color
-                              color: 'white',
-                              p: 1, 
-                              borderRadius: 1, 
-                              overflow: 'hidden', 
-                              cursor: 'pointer',
-                              '&:hover': { opacity: 0.9 },
-                            }}
-                            onClick={() => handleEventInteraction(event)}
-                          >
-                            <Typography variant="body2" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{event.title}</Typography>
-                            <Typography variant="caption" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{`${event.startTime} - ${event.endTime}`}</Typography>
-                          </Paper>
-                        ))}
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            )}
-            {view === 'month' && renderMonthView()}
-          </Box>
-        </Paper>
+            <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+              {view === 'day' ? (
+                <DayView
+                  currentDate={currentDate}
+                  events={events}
+                  rooms={visibleRooms}
+                  onEventClick={handleEventInteraction}
+                  generateBookingColor={generateBookingColor}
+                  currentPage={currentPage}
+                  roomsPerPage={roomsPerPage}
+                  totalRooms={filteredRooms.length}
+                  onPageChange={handleRoomPageChange}
+                />
+              ) : (
+                <MonthView
+                  currentDate={currentDate}
+                  events={events}
+                  rooms={rooms}
+                  onDayClick={handleDayClickInMonthView}
+                  onEventHover={handlePopoverOpen}
+                  generateBookingColor={generateBookingColor}
+                />
+              )}
+            </Box>
+          </Paper>
+        </Box>
       </Box>
 
-      <Popover
-        id={popoverId}
-        open={openPopover}
+      <EventPopover
+        open={Boolean(popoverAnchorEl)}
         anchorEl={popoverAnchorEl}
         onClose={handlePopoverClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        PaperProps={{
-          onMouseEnter: () => { /* Keep popover open */ },
-          onMouseLeave: handlePopoverClose,
-          sx: { pointerEvents: 'auto' }
-        }}
-        disableRestoreFocus
-      >
-        <Box sx={{ p: 2, minWidth: 250, maxWidth: 350 }}>
-          {popoverDate && (
-            <Typography variant="h6" gutterBottom>
-              Events for {popoverDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-            </Typography>
-          )}
-          <List dense>
-            {popoverEvents.map(event => (
-              <ListItem key={event.id} disablePadding>
-                <Link
-                  component="button"
-                  onClick={() => {
-                    handleEventInteraction(event);
-                    handlePopoverClose();
-                  }}
-                  sx={{ width: '100%', textAlign: 'left', textDecoration: 'none', color: 'inherit', '&:hover': { backgroundColor: 'action.hover'}, borderRadius:1, padding: '8px' }}
-                >
-                  <ListItemText
-                    primary={event.title}
-                    secondary={`${event.startTime} - ${event.endTime} (${event.room})`}
-                    primaryTypographyProps={{ sx: { fontWeight: 'medium' } }}
-                  />
-                </Link>
-              </ListItem>
-            ))}
-            {popoverEvents.length === 0 && popoverDate && (
-              <ListItem>
-                <ListItemText primary="No events for this day." />
-              </ListItem>
-            )}
-          </List>
-        </Box>
-      </Popover>
+        events={popoverEvents}
+        date={popoverDate}
+        rooms={rooms}
+        onEventClick={handleEventInteraction}
+      />
 
       <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>{editingEvent?.id ? 'Edit Booking' : 'Create Booking'}</DialogTitle>
@@ -718,12 +369,11 @@ const getRecurrenceDates = (startDate: Date, recurrenceRule: string) => {
             onCancel={handleCloseBookingForm}
             initialData={editingEvent}
             currentDate={formDate}
-            onDelete={handleRequestDelete} // Pass the delete handler
+            onDelete={handleRequestDelete}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={handleCloseDeleteConfirm}
@@ -745,22 +395,8 @@ const getRecurrenceDates = (startDate: Date, recurrenceRule: string) => {
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
-};
-
-const calculateEventPosition = (startTime: string): string => {
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const totalMinutesFrom8AM = (hours - 8) * 60 + minutes;
-  return `${totalMinutesFrom8AM}px`;
-};
-
-const calculateEventHeight = (startTime: string, endTime: string): string => {
-  const [startHours, startMinutes] = startTime.split(':').map(Number);
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
-  const durationMinutes = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-  return `${Math.max(30, durationMinutes)}px`;
 };
 
 export default Calendar;

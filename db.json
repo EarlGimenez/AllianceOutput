@@ -6,15 +6,46 @@
       "location": "1st Floor, East Wing",
       "timeStart": "08:00",
       "timeEnd": "18:00",
-      "image": "https://via.placeholder.com/150?text=Conference+A"
+      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
     },
     {
       "id": "2",
       "name": "School Classroom",
       "location": "2nd Floor, West Wing",
       "timeStart": "07:00",
-      "timeEnd": "20:00",
-      "image": "https://via.placeholder.com/150?text=Classroom"
+      "timeEnd": "17:00",
+      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
+    },
+    {
+      "id": "3",
+      "name": "Professional Studio",
+      "location": "3rd Floor, North Wing",
+      "timeStart": "09:00",
+      "timeEnd": "21:00",
+      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
+    },
+    {
+      "id": "4",
+      "name": "Science Lab",
+      "location": "Basement Level",
+      "timeStart": "10:00",
+      "timeEnd": "16:00",
+      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
+    },
+    {
+      "id": "5",
+      "name": "Coworking Space",
+      "location": "Ground Floor",
+      "timeStart": "06:00",
+      "timeEnd": "22:00",
+      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
+    },
+    {
+      "id": "3421",
+      "name": "Test Room",
+      "location": "1st Floor East Wing",
+      "timeStart": "08:00",
+      "timeEnd": "18:00"
     }
   ],
   "users": [
@@ -113,66 +144,34 @@
   ],
   "bookings": [
     {
-      "id": "0acd",
-      "title": "test",
+      "id": "3289",
+      "title": "Test",
       "date": "2025-05-14",
       "startTime": "09:00",
       "endTime": "10:00",
-      "room": "Meeting Room",
+      "room": "Conference Room A",
       "description": "",
-      "userId": "1747150009906"
+      "userId": "1747204166579"
     },
     {
-      "id": "9c66",
-      "title": "test",
+      "id": "5eec",
+      "title": "Test 2",
+      "date": "2025-05-14",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "roomId": "1",
+      "description": "",
+      "userId": "1747204166579"
+    },
+    {
+      "id": "5ffd",
+      "title": "Test",
       "date": "2025-05-14",
       "startTime": "10:00",
       "endTime": "11:00",
-      "room": "Meeting Room",
+      "roomId": "1",
       "description": "",
-      "userId": "1747150009906"
-    },
-    {
-      "id": "67a1",
-      "title": "test",
-      "date": "2025-05-14",
-      "startTime": "09:00",
-      "endTime": "10:00",
-      "room": "School Classroom",
-      "description": "testtest",
-      "userId": "1747150009906"
-    },
-    {
-      "id": "ed4c",
-      "title": "3test",
-      "date": "2025-05-14",
-      "startTime": "09:00",
-      "endTime": "10:00",
-      "room": "Professional Studio",
-      "description": "",
-      "userId": "1747150009906",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250614T155959Z"
-    },
-    {
-      "id": "a573",
-      "title": "test",
-      "date": "2025-05-14",
-      "startTime": "11:00",
-      "endTime": "12:00",
-      "room": "Meeting Room",
-      "description": "",
-      "userId": "1747150009906"
-    },
-    {
-      "id": "82da",
-      "title": "test",
-      "date": "2025-05-14",
-      "startTime": "09:00",
-      "endTime": "10:00",
-      "room": "Science Lab",
-      "description": "",
-      "userId": "1747150009906",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250516T155959Z"
+      "userId": "1747204166579"
     }
   ]
 }

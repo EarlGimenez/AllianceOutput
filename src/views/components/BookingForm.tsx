@@ -26,31 +26,59 @@ interface BookingFormProps {
   onDelete?: (eventId: string) => void; // Added for delete functionality
 }
 
-// Update the formatDateForInput function
-const formatDateForInput = (date: Date | undefined | string): string => {
+const formatDateForInput = (date: Date | string): string => {
   if (!date) return '';
   try {
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
-    // Force UTC to avoid timezone issues
-    const year = d.getUTCFullYear();
-    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-    const day = d.getUTCDate().toString().padStart(2, '0');
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (error) {
     return '';
   }
 };
 
-// Update the formatTimeForInput function
+
 const formatTimeForInput = (time: string | undefined): string => {
-  if (!time) return '09:00';
+  if (!time) return '09:00'; // Default to 9:00 AM if no time provided
   // Simple validation for HH:MM format
   if (/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
     return time;
   }
   return '09:00'; // Default fallback
 };
+
+// Add this helper function to validate time against room availability
+const validateTimeAgainstRoom = (room: Room, startTime: string, endTime: string): { valid: boolean; message?: string } => {
+  const convertToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const startMinutes = convertToMinutes(startTime);
+  const endMinutes = convertToMinutes(endTime);
+  const roomStartMinutes = convertToMinutes(room.timeStart);
+  const roomEndMinutes = convertToMinutes(room.timeEnd);
+
+  if (startMinutes < roomStartMinutes) {
+    return { 
+      valid: false, 
+      message: `Booking cannot start before ${room.timeStart} (room opening time)` 
+    };
+  }
+
+  if (endMinutes > roomEndMinutes) {
+    return { 
+      valid: false, 
+      message: `Booking cannot end after ${room.timeEnd} (room closing time)` 
+    };
+  }
+
+  return { valid: true };
+};
+
 
 const BookingForm: React.FC<BookingFormProps> = ({
   rooms,
@@ -63,23 +91,29 @@ const BookingForm: React.FC<BookingFormProps> = ({
   const [title, setTitle] = useState(initialData?.title || '');
   // In BookingForm.tsx, update the useState initializations:
 
-  const [date, setDate] = useState(() => {
-    // Use initialData date if available, otherwise use currentDate
-    if (initialData?.date) return formatDateForInput(initialData.date);
-    return currentDate ? formatDateForInput(currentDate) : formatDateForInput(new Date());
-  });
+const [date, setDate] = useState(() => {
+  // Use initialData date if available, otherwise use currentDate, otherwise use current date
+  if (initialData?.date) return formatDateForInput(initialData.date);
+  return currentDate ? formatDateForInput(currentDate) : formatDateForInput(new Date());
+});
+
 
   const [startTime, setStartTime] = useState(() => {
-    const initialTime = initialData?.startTime;
-    return initialTime ? formatTimeForInput(initialTime) : '09:00';
-  });
+  const initialTime = initialData?.startTime;
+  return initialTime ? formatTimeForInput(initialTime) : '09:00'; // Default to 9:00 AM
+});
 
-  const [endTime, setEndTime] = useState(() => {
-    const initialTime = initialData?.endTime;
-    // If no initial end time, set it to 1 hour after start time
-    return initialTime ? formatTimeForInput(initialTime) : '10:00';
-  });
-  const [selectedRoom, setSelectedRoom] = useState<string>(initialData?.room || (rooms.length > 0 ? rooms[0] : ''));
+const [endTime, setEndTime] = useState(() => {
+  const initialTime = initialData?.endTime;
+  return initialTime ? formatTimeForInput(initialTime) : '10:00'; // Default to 10:00 AM
+});
+
+  // Change the initial state and room selection
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(
+    initialData?.roomId || (rooms.length > 0 ? rooms[0].id : '')
+  );
+
+  // const [selectedRoom, setSelectedRoom] = useState<string>(initialData?.room || (rooms.length > 0 ? rooms[0] : ''));
   const [description, setDescription] = useState(initialData?.description || '');
 
   const [isRecurring, setIsRecurring] = useState(!!initialData?.recurrenceRule);
@@ -89,13 +123,27 @@ const BookingForm: React.FC<BookingFormProps> = ({
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+    useEffect(() => {
+  if (!initialData?.endTime && !initialData?.startTime) {
+    // Only set default end time if no initial data is provided
+    const start = new Date(`2000-01-01T${startTime}:00`);
+    const end = new Date(start.getTime() + 60 * 60 * 1000); // Add 1 hour
+    const endHours = end.getHours().toString().padStart(2, '0');
+    const endMinutes = end.getMinutes().toString().padStart(2, '0');
+    setEndTime(`${endHours}:${endMinutes}`);
+  }
+}, [startTime, initialData]);
+
   // Add this to the BookingForm.tsx's recurrence section
 useEffect(() => {
   if (isRecurring && recurrenceType !== 'none') {
     const checkConflicts = async () => {
       try {
+        const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+        if (!selectedRoom) return;
+
         const { hasConflict } = await checkBookingConflict(
-          selectedRoom as Room,
+          selectedRoom, // Pass the room object
           date || formatDateForInput(currentDate) || '',
           startTime,
           endTime,
@@ -121,13 +169,13 @@ useEffect(() => {
     const debounceTimer = setTimeout(checkConflicts, 500);
     return () => clearTimeout(debounceTimer);
   }
-}, [isRecurring, recurrenceType, selectedRoom, date, startTime, endTime, weeklyDays]);
+}, [isRecurring, recurrenceType, selectedRoomId, date, startTime, endTime, weeklyDays]);
 
-  useEffect(() => {
-    setTitle(initialData?.title || '');
-    setStartTime(formatTimeForInput(initialData?.startTime) || '09:00');
-    setEndTime(formatTimeForInput(initialData?.endTime) || '10:00');
-    setSelectedRoom(initialData?.room || (rooms.length > 0 ? rooms[0] : ''));
+useEffect(() => {
+  setTitle(initialData?.title || '');
+  setStartTime(formatTimeForInput(initialData?.startTime) || '09:00');
+  setEndTime(formatTimeForInput(initialData?.endTime) || '10:00');
+  setSelectedRoomId(initialData?.roomId || (rooms.length > 0 ? rooms[0].id : ''));
     setDescription(initialData?.description || '');
     setErrors({});
 
@@ -166,7 +214,7 @@ useEffect(() => {
     setDate(formatDateForInput(initialData?.date || currentDate));
   }, [initialData?.date, currentDate]);
 
-// Update the validate function
+// Update the validate function to include room time validation
 const validate = (): boolean => {
   const newErrors: { [key: string]: string } = {};
   
@@ -175,7 +223,7 @@ const validate = (): boolean => {
   if (!startTime) newErrors.startTime = 'Start time required';
   if (!endTime) newErrors.endTime = 'End time required';
   if (startTime >= endTime) newErrors.endTime = 'End time must be after start time';
-  if (!selectedRoom) newErrors.room = 'Room required';
+  if (!selectedRoomId) newErrors.room = 'Room required';
 
   // Date validation
   if (!date) {
@@ -187,8 +235,17 @@ const validate = (): boolean => {
     }
   }
 
+  // Room time validation
+  const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+  if (selectedRoom && startTime && endTime) {
+    const timeValidation = validateTimeAgainstRoom(selectedRoom, startTime, endTime);
+    if (!timeValidation.valid && timeValidation.message) {
+      newErrors.endTime = timeValidation.message;
+    }
+  }
+
   // Recurrence validation
-if (isRecurring && recurrenceType !== 'none' && recurrenceEndDate) {
+  if (isRecurring && recurrenceType !== 'none' && recurrenceEndDate) {
     const endDate = new Date(recurrenceEndDate);
     const startDate = new Date(date || currentDate || new Date());
     
@@ -211,9 +268,16 @@ const handleSubmit = async (event: React.FormEvent) => {
   try {
     const recurrenceRule = isRecurring && recurrenceType !== 'none' ? generateRecurrenceRule() : undefined;
     
-    // Check for conflicts
+    // Get the selected room object
+    const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+    if (!selectedRoom) {
+      setErrors(prev => ({...prev, room: 'Please select a valid room'}));
+      return;
+    }
+
+    // Check for conflicts using room ID
     const { hasConflict, conflictingEvents } = await checkBookingConflict(
-      selectedRoom as Room,
+      selectedRoom,
       bookingDate,
       startTime,
       endTime,
@@ -222,12 +286,21 @@ const handleSubmit = async (event: React.FormEvent) => {
     );
 
     if (hasConflict) {
-      const conflictMessage = `Conflict with existing booking(s):\n${
-        conflictingEvents.map(e => 
-          `${e.title} (${e.date} ${e.startTime}-${e.endTime}${e.recurrenceRule ? ' (Recurring)' : ''})`
-        ).join('\n')
-      }`;
-      alert(conflictMessage);
+      if (conflictingEvents.length === 0) {
+        // This is a room availability conflict
+        const timeValidation = validateTimeAgainstRoom(selectedRoom, startTime, endTime);
+        if (!timeValidation.valid && timeValidation.message) {
+          setErrors(prev => ({...prev, endTime: timeValidation.message}));
+        }
+      } else {
+        // This is a booking conflict with other events
+        const conflictMessage = `Conflict with existing booking(s):\n${
+          conflictingEvents.map(e => 
+            `${e.title} (${e.date} ${e.startTime}-${e.endTime}${e.recurrenceRule ? ' (Recurring)' : ''})`
+          ).join('\n')
+        }`;
+        alert(conflictMessage);
+      }
       return;
     }
 
@@ -237,7 +310,7 @@ const handleSubmit = async (event: React.FormEvent) => {
       date: bookingDate,
       startTime,
       endTime,
-      room: selectedRoom as Room,
+      roomId: selectedRoomId,
       description,
       userId,
       recurrenceRule
@@ -410,22 +483,25 @@ const dayOptions = [
         </Grid>
         <Grid item xs={12}>
           <FormControl fullWidth required error={!!errors.room}>
-            <InputLabel id="room-select-label">Room</InputLabel>
-            <Select
-              labelId="room-select-label"
-              id="selectedRoom"
-              value={selectedRoom}
-              label="Room"
-              onChange={(e) => { setSelectedRoom(e.target.value as string); if (errors.room) setErrors(prev => ({...prev, room: ''}));}}
-            >
-              {rooms.map((roomName) => (
-                <MenuItem key={roomName} value={roomName}>
-                  {roomName}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.room && <FormHelperText>{errors.room}</FormHelperText>}
-          </FormControl>
+  <InputLabel id="room-select-label">Room</InputLabel>
+  <Select
+    labelId="room-select-label"
+    id="selectedRoom"
+    value={selectedRoomId}
+    label="Room"
+    onChange={(e) => {
+      setSelectedRoomId(e.target.value as string);
+      if (errors.room) setErrors(prev => ({...prev, room: ''}));
+    }}
+  >
+    {rooms.map((room) => (
+      <MenuItem key={room.id} value={room.id}>
+        {room.name}
+      </MenuItem>
+    ))}
+  </Select>
+  {errors.room && <FormHelperText>{errors.room}</FormHelperText>}
+</FormControl>
         </Grid>
         <Grid item xs={12}>
           <TextField

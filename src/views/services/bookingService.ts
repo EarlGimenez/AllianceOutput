@@ -147,6 +147,24 @@ export const checkBookingConflict = async (
   excludeId?: string
 ): Promise<{ hasConflict: boolean; conflictingEvents: CalendarEvent[] }> => {
   try {
+    // First check if the booking is within room availability
+    const convertToMinutes = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const startMinutes = convertToMinutes(startTime);
+    const endMinutes = convertToMinutes(endTime);
+    const roomStartMinutes = convertToMinutes(room.timeStart);
+    const roomEndMinutes = convertToMinutes(room.timeEnd);
+
+    if (startMinutes < roomStartMinutes || endMinutes > roomEndMinutes) {
+      return { 
+        hasConflict: true, 
+        conflictingEvents: [] // Empty array indicates room availability conflict
+      };
+    }
+
     const allBookings = await getBookings();
     const conflictingEvents: CalendarEvent[] = [];
 
@@ -175,8 +193,8 @@ export const checkBookingConflict = async (
     };
 
     for (const booking of allBookings) {
-      if (booking.room !== room || booking.id === excludeId) continue;
-
+      if (booking.roomId !== room.id || booking.id === excludeId) continue;
+      
       const bookingDate = new Date(booking.date);
       const newDate = new Date(date);
 

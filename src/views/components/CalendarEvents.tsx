@@ -1,19 +1,21 @@
-// In CalendarEvents.tsx
+// CalendarEvents.ts
 export interface CalendarEvent {
   id: string;
   title: string;
   date: string;
   startTime: string;
   endTime: string;
-  room: Room;
+  roomId: string; // Changed from room to roomId for consistency
   description?: string;
   recurrenceRule?: string;
-  userId: string; // Add this line
+  userId: string;
 }
 
-export type Room = 
-  | 'Meeting Room' 
-  | 'School Classroom' 
-  | 'Professional Studio' 
-  | 'Science Lab' 
-  | 'Coworking Space';
+export interface Room {
+  id: string; // Ensure each Room has a unique id
+  name: string;
+  location: string;
+  timeStart: string;
+  timeEnd: string;
+  image: string;
+}
