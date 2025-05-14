@@ -48,6 +48,9 @@ import TableViewIcon from "@mui/icons-material/TableView"
 import EventIcon from "@mui/icons-material/Event"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
+import BookingForm from "../../components/BookingForm"
+import { createBooking, updateBooking, deleteBooking } from "../../services/bookingService"
+import { CalendarEvent, Room } from '../../components/CalendarEvents';
 
 interface Booking {
   id: string
@@ -57,6 +60,15 @@ interface Booking {
   location: string
   date: Date
   color: string
+}
+
+interface CalendarProps {
+  events: CalendarEvent[];
+  currentDate: Date;
+  onDateChange?: (date: Date) => void;
+  onAddEvent?: (newEvent: Partial<CalendarEvent>) => Promise<void>;
+  onEditEvent?: (updatedEvent: CalendarEvent) => Promise<void>;
+  onDeleteEvent?: (eventId: string) => Promise<void>;
 }
 
 interface TabPanelProps {
@@ -97,18 +109,21 @@ export const UserProfile: React.FC = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false)
-  const [formDate, setFormDate] = useState<Date | undefined>(selectedDate)
-  const [newBookingData, setNewBookingData] = useState<Partial<Booking>>({
-    room: "",
-    startTime: "",
-    endTime: "",
-    location: "",
-    date: selectedDate,
-    color: "primary"
-  })
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined)
+  const [formDate, setFormDate] = useState<Date | undefined>(new Date())
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [eventToDeleteId, setEventToDeleteId] = useState<string | null>(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const navigate = useNavigate()
+
+   const rooms: Room[] = [
+      'Meeting Room',
+      'School Classroom',
+      'Professional Studio',
+      'Science Lab',
+      'Coworking Space',
+    ];
 
   // Sample bookings data
   const [bookings, setBookings] = useState<Booking[]>([
@@ -141,43 +156,86 @@ export const UserProfile: React.FC = () => {
     },
   ])
 
-  const handleCreateButtonClick = () => {
-    setFormDate(selectedDate)
-    setNewBookingData({
-      room: "",
-      startTime: "",
-      endTime: "",
-      location: "",
-      date: selectedDate,
-      color: "primary"
-    })
+  const handleOpenBookingForm = (eventToEdit?: CalendarEvent, dateForNew?: Date) => {
+    if (eventToEdit) {
+      setEditingEvent(eventToEdit)
+      setFormDate(eventToEdit.date ? new Date(eventToEdit.date + 'T00:00:00') : undefined)
+    } else {
+      setEditingEvent(undefined)
+      setFormDate(dateForNew || new Date())
+    }
     setIsBookingFormOpen(true)
   }
 
   const handleCloseBookingForm = () => {
     setIsBookingFormOpen(false)
+    setEditingEvent(undefined)
   }
 
-  const handleBookingSubmit = () => {
-    const newBooking: Booking = {
-      id: Math.random().toString(36).substring(2, 9),
-      room: newBookingData.room || "Unknown Room",
-      startTime: newBookingData.startTime || "",
-      endTime: newBookingData.endTime || "",
-      location: newBookingData.location || "",
-      date: newBookingData.date || new Date(),
-      color: newBookingData.color || "primary"
+  const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
+    try {
+      const adjustToLocalDate = (dateStr: string) => {
+        const date = new Date(dateStr)
+        return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+          .toISOString()
+          .split('T')[0]
+      }
+
+      const bookingDate = bookingData.date 
+        ? adjustToLocalDate(bookingData.date)
+        : adjustToLocalDate(new Date().toISOString())
+
+      if (bookingData.id) {
+        // Update existing booking
+        const updatedBooking = await updateBooking(bookingData.id, {
+          ...bookingData,
+          date: bookingDate
+        })
+        // Update your bookings state here
+        console.log('Booking updated:', updatedBooking)
+      } else {
+        // Create new booking
+        const newBooking = await createBooking({
+          ...bookingData,
+          date: bookingDate,
+          userId: localStorage.getItem('userId') || ''
+        } as Omit<CalendarEvent, 'id'>)
+        
+        // Add to your bookings state here
+        console.log('Booking created:', newBooking)
+      }
+      handleCloseBookingForm()
+    } catch (error) {
+      console.error('Error saving booking:', error)
+      alert('Failed to save booking')
     }
-
-    setBookings([...bookings, newBooking])
-    setIsBookingFormOpen(false)
   }
 
-  const handleNewBookingChange = (field: keyof Booking, value: string | Date) => {
-    setNewBookingData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+  const handleRequestDelete = (eventId: string) => {
+    setEventToDeleteId(eventId)
+    setDeleteConfirmOpen(true)
+    if (editingEvent?.id === eventId) {
+      handleCloseBookingForm()
+    }
+  }
+
+  const handleCloseDeleteConfirm = () => {
+    setDeleteConfirmOpen(false)
+    setEventToDeleteId(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!eventToDeleteId) return
+    
+    try {
+      await deleteBooking(eventToDeleteId)
+      // Remove from your bookings state here
+      console.log('Booking deleted:', eventToDeleteId)
+      handleCloseDeleteConfirm()
+    } catch (error) {
+      console.error('Error deleting booking:', error)
+      alert('Failed to delete booking')
+    }
   }
 
   // Filter bookings for the selected date or all if showAllBookings is true
@@ -446,7 +504,7 @@ export const UserProfile: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={handleCreateButtonClick}
+              onClick={() => handleOpenBookingForm()}
               sx={{
                 backgroundColor: "#1e5393",
                 "&:hover": {
@@ -857,109 +915,6 @@ export const UserProfile: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Create Booking Dialog */}
-      <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
-        <DialogTitle>Create Booking</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
-              margin="dense"
-              id="new-room"
-              label="Room"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={newBookingData.room}
-              onChange={(e) => handleNewBookingChange("room", e.target.value)}
-              sx={{ mb: 2 }}
-            />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  margin="dense"
-                  id="new-date"
-                  label="Date"
-                  type="date"
-                  fullWidth
-                  variant="outlined"
-                  value={newBookingData.date?.toISOString().split("T")[0] || ""}
-                  onChange={(e) => handleNewBookingChange("date", new Date(e.target.value))}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <FormControl fullWidth margin="dense">
-                  <InputLabel id="new-color-label">Color</InputLabel>
-                  <Select
-                    labelId="new-color-label"
-                    id="new-color"
-                    value={newBookingData.color}
-                    label="Color"
-                    onChange={(e) => handleNewBookingChange("color", e.target.value)}
-                  >
-                    <MenuItem value="primary">Blue</MenuItem>
-                    <MenuItem value="secondary">Purple</MenuItem>
-                    <MenuItem value="success">Green</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  margin="dense"
-                  id="new-startTime"
-                  label="Start Time"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={newBookingData.startTime}
-                  onChange={(e) => handleNewBookingChange("startTime", e.target.value)}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  margin="dense"
-                  id="new-endTime"
-                  label="End Time"
-                  type="text"
-                  fullWidth
-                  variant="outlined"
-                  value={newBookingData.endTime}
-                  onChange={(e) => handleNewBookingChange("endTime", e.target.value)}
-                />
-              </Grid>
-            </Grid>
-            <TextField
-              margin="dense"
-              id="new-location"
-              label="Location"
-              type="text"
-              fullWidth
-              variant="outlined"
-              value={newBookingData.location}
-              onChange={(e) => handleNewBookingChange("location", e.target.value)}
-              sx={{ mt: 1 }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseBookingForm}>Cancel</Button>
-          <Button
-            onClick={handleBookingSubmit}
-            variant="contained"
-            sx={{
-              backgroundColor: "#1e5393",
-              "&:hover": {
-                backgroundColor: "#164279",
-              },
-            }}
-          >
-            Create Booking
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* Cancel Booking Dialog */}
       <Dialog open={cancelDialogOpen} onClose={handleCloseCancelDialog}>
         <DialogTitle>Cancel Booking</DialogTitle>
@@ -973,6 +928,44 @@ export const UserProfile: React.FC = () => {
           <Button onClick={handleCloseCancelDialog}>No, Keep It</Button>
           <Button onClick={handleConfirmCancel} color="error" variant="contained">
             Yes, Cancel Booking
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Booking Form Dialog */}
+      <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>{editingEvent?.id ? 'Edit Booking' : 'Create Booking'}</DialogTitle>
+        <DialogContent>
+          <BookingForm
+            rooms={rooms}
+            onSubmit={handleBookingSubmit}
+            onCancel={handleCloseBookingForm}
+            initialData={editingEvent}
+            currentDate={formDate}
+            onDelete={handleRequestDelete}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCloseDeleteConfirm}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Confirm Deletion"}</DialogTitle>
+        <DialogContent>
+          <Typography id="alert-dialog-description">
+            Are you sure you want to cancel this reservation? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteConfirm} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

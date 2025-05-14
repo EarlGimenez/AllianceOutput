@@ -135,6 +135,13 @@
       "lastName": "test",
       "email": "test2@test.com",
       "password": "$2b$10$1dKoos6vRur0XKGRNGNUqed1cIES/sQIiXqFEmmEjYw/LXLS0vqKu"
+    },
+    {
+      "id": 1747198923575,
+      "firstName": "hello",
+      "lastName": "world",
+      "email": "helloworld@example.com",
+      "password": "$2b$10$.WD3c75F0bEZo/1S6MydDOfl2DqZiljzH3gGJG5hBH8zK8k1onF5a"
     }
   ],
   "bookings": [
