@@ -85,61 +85,47 @@
       "company": "Umbrella Corp"
     },
     {
-      "id": "6",
-      "email": "emily.davis@example.com",
-      "username": "emilyd",
-      "fullName": "Emily Davis",
-      "company": "Globex Corp"
+      "id": 1747412561686,
+      "firstName": "teestes",
+      "lastName": "test",
+      "username": "testt3esdts",
+      "email": "test@testestest.com",
+      "password": "testtest"
     },
     {
-      "id": "7",
-      "email": "david.miller@example.com",
-      "username": "davidm",
-      "fullName": "David Miller",
-      "company": "Initech"
+      "id": "58ee",
+      "firstName": "testte",
+      "lastName": "testt",
+      "username": "testteqt",
+      "email": "test@testestetetest.com",
+      "password": "$2b$10$9ah1uZHQd/7lidT.3klbYOLfKkFBbGihzoi388llP0hZJFG0AvHLW",
+      "confirmPassword": "testtest"
     },
     {
-      "id": "8",
-      "email": "jennifer.wilson@example.com",
-      "username": "jenniferw",
-      "fullName": "Jennifer Wilson",
-      "company": "Acme Inc."
-    },
-    {
-      "id": "ed95",
+      "id": "c584",
+      "firstName": "test",
+      "lastName": "test",
+      "username": "testtestetst",
       "email": "test@test.com",
-      "username": "test",
-      "fullName": "test",
-      "company": "test",
-      "password": "$2b$10$1dKoos6vRur0XKGRNGNUqed1cIES/sQIiXqFEmmEjYw/LXLS0vqKu"
+      "password": "$2b$10$RVbR3p35ZjjwnD48mAr9xO1/AKBluNZRAexspuKkaq29X59slMnZa",
+      "confirmPassword": "testtest"
     },
     {
-      "id": "1747150009906",
-      "firstName": "test2",
-      "lastName": "test",
-      "email": "test2@test.com",
-      "password": "$2b$10$1dKoos6vRur0XKGRNGNUqed1cIES/sQIiXqFEmmEjYw/LXLS0vqKu"
-    },
-    {
-      "id": 1747196196953,
+      "id": "cea0",
       "firstName": "test",
       "lastName": "test",
-      "email": "test3@test.com",
-      "password": "$2b$10$x1p/udNqzPdrQrlPRNOHYeuIMrDVrKgdHLNrXG.qqnVKLt01valVS"
+      "username": "testtesttest",
+      "email": "testtest@test.com",
+      "password": "$2b$10$vxdgk3BP9mdbpBfPQ9u9ROY66unZ9JkZ4hGaRRRQV2qjCR1anJjIC",
+      "confirmPassword": "testtest"
     },
     {
-      "id": 1747204166579,
-      "firstName": "test",
-      "lastName": "test",
-      "email": "nocreate@test.com",
-      "password": "$2b$10$zTlYk1Gjv65ySZpQ3MFj.ub//I4pCYJRXqBJkMChBp2AAkYVQSRqe"
-    },
-    {
-      "id": 1747198923575,
-      "firstName": "hello",
-      "lastName": "world",
-      "email": "helloworld@example.com",
-      "password": "$2b$10$.WD3c75F0bEZo/1S6MydDOfl2DqZiljzH3gGJG5hBH8zK8k1onF5a"
+      "id": "8a8d",
+      "firstName": "testt",
+      "lastName": "testtest",
+      "username": "testtesttesttest",
+      "email": "testtest@testtesttest.com",
+      "password": "$2b$10$xgGo0TiXh9rODEDTCBBhQeEPc21u.72BOqIbsvz/v4/u4rCi5RStS"
     }
   ],
   "bookings": [
@@ -150,6 +136,7 @@
       "startTime": "09:00",
       "endTime": "10:00",
       "room": "Conference Room A",
+      "roomId": "2",
       "description": "",
       "userId": "1747204166579"
     },
@@ -172,6 +159,17 @@
       "roomId": "1",
       "description": "",
       "userId": "1747204166579"
+    },
+    {
+      "id": "d120",
+      "title": "Test",
+      "date": "2025-05-17",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "roomId": "1",
+      "description": "testtest",
+      "userId": "{\"userId\":\"c584\"}",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250520T155959Z"
     }
   ]
 }

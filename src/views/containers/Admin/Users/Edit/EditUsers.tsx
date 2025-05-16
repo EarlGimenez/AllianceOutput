@@ -1,7 +1,6 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,194 +14,167 @@ import {
   CircularProgress,
   Divider,
   Alert,
-} from "@mui/material"
-import { Link, useNavigate, useParams } from "react-router-dom"
-import { AdminSidebar } from "../../../../components/AdminSidebar"
-import { AdminHeader } from "../../../../components/AdminHeader"
-import { PATHS } from "../../../../../constant"
-
-// Import user data from db.json
-import usersData from "../../../../../../db.json"
+} from "@mui/material";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import bcrypt from "bcryptjs";
+import { AdminSidebar } from "../../../../components/AdminSidebar";
+import { PATHS } from "../../../../../constant";
 
 interface User {
-  id: string
-  email: string
-  username: string
-  fullName: string
-  company: string
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  password: string;
 }
 
 const AdminUsersEdit: React.FC = () => {
-  const theme = useTheme()
-  const navigate = useNavigate()
-  const { id } = useParams<{ id: string }>()
-  const [loading, setLoading] = useState(true)
-  const [formData, setFormData] = useState({
-    email: "",
-    username: "",
-    fullName: "",
-    company: "",
-    password: "",
-    confirmPassword: "",
-  })
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [formData, setFormData] = useState<User | null>(null);
+  const [initialPassword, setInitialPassword] = useState<string>("");
   const [errors, setErrors] = useState({
     email: "",
     username: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     company: "",
     password: "",
     confirmPassword: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
+  });
+  const [loading, setLoading] = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // 1. Start by setting loading
+// EditUsers.tsx (continued from part 1)
+
+useEffect(() => {
+  if (id) {
     setLoading(true);
-  
-    // 2. Fetch the user from json-server
     fetch(`http://localhost:3001/users/${id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("User not found");
-        const user = await res.json();
-        // 3. Populate the form
-        setFormData({
-          email: user.email,
-          username: user.username,
-          fullName: user.fullName,
-          company: user.company,
-          password: "",
-          confirmPassword: "",
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("User not found");
+          }
+          return res.json();
+        })
+        .then((user: User) => {
+          setFormData(user);
+          setInitialPassword(user.password);
+        })
+        .catch((err) => {
+          console.error(err);
+          setError(err.message);
+          setLoading(false);
         });
-      })
-      .catch(() => {
-        // Redirect if no user
-        navigate(PATHS.ADMIN_USERS.path);
-      })
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
-  
+    }
+  }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
-    // Clear error when user types
-    setErrors({
-      ...errors,
-      [name]: "",
-    })
-  }
+  const validateForm = useCallback((): boolean => {
+    let isValid = true;
+    let newErrors = { ...errors };
 
-  const validateForm = () => {
-    let valid = true
-    const newErrors = { ...errors }
+    if (!formData) return false;
 
-    // Email validation
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
-      valid = false
+      newErrors.email = "Email is required";
+      isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid"
-      valid = false
+      newErrors.email = "Invalid email format";
+      isValid = false;
     }
 
-    // Username validation
     if (!formData.username.trim()) {
-      newErrors.username = "Username is required"
-      valid = false
+      newErrors.username = "Username is required";
+      isValid = false;
     } else if (formData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters"
-      valid = false
+      newErrors.username = "Username must be at least 3 characters long";
+      isValid = false;
     }
 
-    // Full name validation
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required"
-      valid = false
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+      isValid = false;
     }
 
-    // Company validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+      isValid = false;
+    }
+
     if (!formData.company.trim()) {
-      newErrors.company = "Company is required"
-      valid = false
+      newErrors.company = "Company is required";
+      isValid = false;
     }
 
-    // Password validation (only if provided)
-    if (formData.password) {
-      if (formData.password.length < 6) {
-        newErrors.password = "Password must be at least 6 characters"
-        valid = false
-      }
-
-      // Confirm password validation
-      if (!formData.confirmPassword) {
-        newErrors.confirmPassword = "Please confirm your password"
-        valid = false
-      } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match"
-        valid = false
+    if (passwordChanged) {
+      if (!formData.password.trim()) {
+        newErrors.password = "Password is required";
+        isValid = false;
+      } else if (formData.password.length < 6) {
+        newErrors.password = "Password must be at least 6 characters long";
+        isValid = false;
       }
     }
 
-    setErrors(newErrors)
-    return valid
-  }
+    setErrors(newErrors);
+    return isValid;
+  }, [formData, errors, passwordChanged]);
 
-  // … inside AdminUsersEdit …
-
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
-  
-    setIsSubmitting(true);
+    if (!formData || !validateForm()) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
+      let hashedPassword = formData.password;
+      if (passwordChanged) {
+        hashedPassword = await bcrypt.hash(formData.password, 10);
+      }
+
       const res = await fetch(`http://localhost:3001/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          username: formData.username,
-          fullName: formData.fullName,
-          company: formData.company,
-          // only send password if changed:
-          ...(formData.password ? { password: formData.password } : {}),
-        }),
+        body: JSON.stringify({ ...formData, password: hashedPassword }),
       });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to update user");
+      }
+
       setSubmitSuccess(true);
-      setTimeout(() => navigate(PATHS.ADMIN_USERS.path), 1500);
-    } catch (err) {
-      console.error("Update user failed:", err);
+      setTimeout(() => {
+        navigate(PATHS.ADMIN_USERS.path);
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || "Error updating user");
+      console.error(err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
 
-  if (loading) {
-    return (
-      <AdminSidebar>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "100vh",
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      </AdminSidebar>
-    )
-  }
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setPasswordChanged(true);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
 
   return (
     <AdminSidebar>
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-
         <Box sx={{ p: 3, flexGrow: 1 }}>
           <Breadcrumbs sx={{ mb: 3 }}>
             <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">
@@ -219,156 +191,134 @@ const handleSubmit = async (e: React.FormEvent) => {
               User updated successfully! Redirecting...
             </Alert>
           )}
+          {error && <Alert severity="error">{error}</Alert>}
 
-          <Paper sx={{ p: 3 }}>
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
-                    User Details
-                  </Typography>
-                </Grid>
+          {formData ? (
+            <Paper sx={{ p: 3 }}>
+              <form onSubmit={handleSubmit}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>
+                      Basic Information
+                    </Typography>
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="email"
-                    name="email"
-                    label="Email Address"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    error={!!errors.email}
-                    helperText={errors.email}
-                    disabled={isSubmitting}
-                  />
-                </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      name="email"
+                      label="Email Address"
+                      value={formData.email}
+                      onChange={handleChange}
+                      error={Boolean(errors.email)}
+                      helperText={errors.email}
+                      disabled={loading}
+                    />
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="username"
-                    name="username"
-                    label="Username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    error={!!errors.username}
-                    helperText={errors.username}
-                    disabled={isSubmitting}
-                  />
-                </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      name="username"
+                      label="Username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      error={Boolean(errors.username)}
+                      helperText={errors.username}
+                      disabled={loading}
+                    />
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="fullName"
-                    name="fullName"
-                    label="Full Name"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    error={!!errors.fullName}
-                    helperText={errors.fullName}
-                    disabled={isSubmitting}
-                  />
-                </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      name="firstName"
+                      label="First Name"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      error={Boolean(errors.firstName)}
+                      helperText={errors.firstName}
+                      disabled={loading}
+                    />
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    required
-                    fullWidth
-                    id="company"
-                    name="company"
-                    label="Company"
-                    value={formData.company}
-                    onChange={handleChange}
-                    error={!!errors.company}
-                    helperText={errors.company}
-                    disabled={isSubmitting}
-                  />
-                </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      name="lastName"
+                      label="Last Name"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      error={Boolean(errors.lastName)}
+                      helperText={errors.lastName}
+                      disabled={loading}
+                    />
+                  </Grid>
 
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Change Password (Optional)
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Leave blank to keep the current password
-                  </Typography>
-                </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      name="company"
+                      label="Company"
+                      value={formData.company}
+                      onChange={handleChange}
+                      error={Boolean(errors.company)}
+                      helperText={errors.company}
+                      disabled={loading}
+                    />
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    id="password"
-                    name="password"
-                    label="New Password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    error={!!errors.password}
-                    helperText={errors.password}
-                    disabled={isSubmitting}
-                  />
-                </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>
+                      Change Password
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                      Leave blank to keep the current password.
+                    </Typography>
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    label="Confirm New Password"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    error={!!errors.confirmPassword}
-                    helperText={errors.confirmPassword}
-                    disabled={isSubmitting}
-                  />
-                </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      name="password"
+                      label="New Password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handlePasswordChange}
+                      error={Boolean(errors.password)}
+                      helperText={errors.password}
+                      disabled={loading}
+                    />
+                  </Grid>
 
-                <Grid item xs={12}>
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-                    <Button
-                      component={Link}
-                      to={PATHS.ADMIN_USERS.path}
-                      variant="outlined"
-                      sx={{
-                        color: "#1e5393",
-                        borderColor: "#1e5393",
-                        "&:hover": {
-                          borderColor: "#184377",
-                        },
-                      }}
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      disabled={isSubmitting}
-                      sx={{
-                        bgcolor: "#1e5393",
-                        "&:hover": {
-                          bgcolor: "#184377",
-                        },
-                      }}
-                    >
-                      {isSubmitting ? "Updating..." : "Update User"}
-                    </Button>
-                  </Box>
+                  <Grid item xs={12}>
+                    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={loading}
+                      >
+                        {loading ? <CircularProgress size={24} /> : "Save"}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => navigate(PATHS.ADMIN_USERS.path)}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </Box>
-          </Paper>
+              </form>
+            </Paper>
+          ) : (
+            <CircularProgress />
+          )}
         </Box>
       </Box>
     </AdminSidebar>
-  )
-}
+  );
+};
 
-export default AdminUsersEdit
+export default AdminUsersEdit;

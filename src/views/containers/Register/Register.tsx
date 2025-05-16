@@ -1,103 +1,102 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Container,
-  Grid,
-  Checkbox,
-  FormControlLabel,
-} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
 import bcrypt from "bcryptjs";
+import { Box, Typography, TextField, Button, Container, Grid, Checkbox, FormControlLabel, Paper } from "@mui/material";
+import { PATHS } from "../../../constant";
 import { LandingNav } from "../../components/LandingNav";
 import { SiteFooter } from "../../components/SiteFooter";
-import { PATHS } from "../../../constant";
 
-const SignUp: React.FC = () => {
+interface FormData {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+const Register: React.FC = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
+    username: "",
     email: "",
     password: "",
-    termsAccepted: false,
+    confirmPassword: "",
   });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [error, setError] = useState("");
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setLoading(true);
+    setError(null);
 
-    const { firstName, lastName, email, password, termsAccepted } = formData;
-
-    if (!firstName || !lastName || !email || !password) {
-      setError("All fields are required.");
-      return;
-    }
-
-    if (!termsAccepted) {
-      setError("You must agree to the terms.");
+    // Validate confirm password
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
       return;
     }
 
     try {
-      // Check if user already exists
-      const checkRes = await fetch(`http://localhost:3001/users?email=${email}`);
-      const existing = await checkRes.json();
+      // Check if email already in use
+      const emailCheck = await fetch(`http://localhost:3001/users?email=${formData.email}`);
+      const emailData = await emailCheck.json();
+      if (emailData.length > 0) {
+        throw new Error("This email is already registered.");
+      }
 
-      if (existing.length > 0) {
-        setError("Email already registered.");
-        return;
+      // Check if username already taken
+      const usernameCheck = await fetch(`http://localhost:3001/users?username=${formData.username}`);
+      const usernameData = await usernameCheck.json();
+      if (usernameData.length > 0) {
+        throw new Error("This username is already taken.");
       }
 
       // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Create new user
-      const newUser = {
-        id: Date.now(), // or use uuid if needed
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-      };
+      const hashedPassword = await bcrypt.hash(formData.password, 10);
 
       // Save to db.json
       const res = await fetch("http://localhost:3001/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
+        body: JSON.stringify({
+          ...formData,
+          password: hashedPassword,
+          confirmPassword: undefined,
+        }),
       });
 
-      if (res.ok) {
-        localStorage.setItem("userAuthenticated", "true");
-        navigate(PATHS.CALENDAR.path); // Or to user dashboard
-      } else {
-        throw new Error("Failed to register.");
+      if (!res.ok) {
+        throw new Error("Registration failed. Please try again later.");
       }
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong. Please try again.");
+
+      // Authenticate and redirect to /user-profile
+      const user = await res.json();
+      localStorage.setItem("userAuthenticated", "true"); 
+      localStorage.setItem("userId", JSON.stringify({ userId: user.id }));  
+
+      navigate(PATHS.USER_PROFILE.path);
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
+return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
       <LandingNav />
-      <Container component="main" maxWidth="sm" sx={{ py: 8 }}>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+
+      <Container component="main" maxWidth="sm" sx={{ py: 8, flexGrow: 1, display: "flex", alignItems: "center" }}>
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2, width: "100%" }}>
           <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: "bold" }}>
             Create an Account
           </Typography>
@@ -111,7 +110,7 @@ const SignUp: React.FC = () => {
             </Typography>
           )}
 
-          <Box component="form" noValidate onSubmit={handleSubmit}>
+          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -134,6 +133,18 @@ const SignUp: React.FC = () => {
                   label="Last Name"
                   autoComplete="family-name"
                   value={formData.lastName}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  name="username"
+                  required
+                  fullWidth
+                  id="username"
+                  label="Username"
+                  autoComplete="username"
+                  value={formData.username}
                   onChange={handleChange}
                 />
               </Grid>
@@ -163,15 +174,21 @@ const SignUp: React.FC = () => {
                 />
               </Grid>
               <Grid item xs={12}>
+                <TextField
+                  name="confirmPassword"
+                  required
+                  fullWidth
+                  label="Confirm Password"
+                  type="password"
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12}>
                 <FormControlLabel
-                  control={
-                    <Checkbox
-                      name="termsAccepted"
-                      color="primary"
-                      checked={formData.termsAccepted}
-                      onChange={handleChange}
-                    />
-                  }
+                  control={<Checkbox required name="terms" color="primary" />}
                   label="I agree to the Terms of Service and Privacy Policy."
                 />
               </Grid>
@@ -181,6 +198,7 @@ const SignUp: React.FC = () => {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={loading}
               sx={{
                 mt: 3,
                 mb: 2,
@@ -205,9 +223,10 @@ const SignUp: React.FC = () => {
           </Box>
         </Paper>
       </Container>
+
       <SiteFooter />
     </Box>
   );
 };
 
-export default SignUp;
+export default Register;

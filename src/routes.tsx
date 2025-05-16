@@ -90,12 +90,12 @@ export const AppRoutes = () => (
         <Route path="rooms">
           <Route index element={<Views.AdminRooms />} />
           <Route path="create" element={<Views.AdminRoomsCreate />} />
-          <Route path=":id/edit" element={<Views.AdminRoomsEdit />} />
+          <Route path="edit/:id" element={<Views.AdminRoomsEdit />} />
         </Route>
         <Route path="users">
           <Route index element={<Views.AdminUsers />} />
           <Route path="create" element={<Views.AdminUsersCreate />} />
-          <Route path=":id/edit" element={<Views.AdminUsersEdit />} />
+          <Route path="edit/:id" element={<Views.AdminUsersEdit />} />
         </Route>
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>

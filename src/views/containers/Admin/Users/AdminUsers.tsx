@@ -30,7 +30,7 @@ import { AdminSidebar } from "../../../components/AdminSidebar"
 import { PATHS } from "../../../../constant"
 
 interface User {
-  id: number
+  id: string
   email: string
   username: string
   fullName: string
@@ -54,14 +54,20 @@ export const AdminUsers: React.FC = () => {
         if (!res.ok) throw new Error(`Failed to load (${res.status})`)
         return res.json()
       })
-      .then((data: User[]) => setUsers(data))
+      .then((data: User[]) => {
+        // Ensure all `id`s are strings
+        const usersWithStringIds = data.map(user => ({ ...user, id: String(user.id) }))
+        setUsers(usersWithStringIds)
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
-  const handleEditUser = (id: number) => {
-    navigate(PATHS.ADMIN_USERS_EDIT.path.replace(":id", String(id)))
-  }
+const handleEditUser = (id: string) => {
+  console.log(`id: ${id}, path: ${PATHS.ADMIN_USERS_EDIT.path.replace(":id", id)}`);
+  navigate(PATHS.ADMIN_USERS_EDIT.path.replace(":id", id));
+}
+
 
   const handleDeleteClick = (user: User) => {
     setUserToDelete(user)

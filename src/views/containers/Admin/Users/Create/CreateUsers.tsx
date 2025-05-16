@@ -1,7 +1,6 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -13,138 +12,157 @@ import {
   Link as MuiLink,
   useTheme,
   Alert,
-} from "@mui/material"
-import { Link, useNavigate } from "react-router-dom"
-import { AdminSidebar } from "../../../../components/AdminSidebar"
-import { AdminHeader } from "../../../../components/AdminHeader"
-import { PATHS } from "../../../../../constant"
+  CircularProgress,
+  Divider
+} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import bcrypt from "bcryptjs";
+import { AdminSidebar } from "../../../../components/AdminSidebar";
+import { PATHS } from "../../../../../constant";
+
+interface FormData {
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  password: string;
+  confirmPassword?: string; // Make confirmPassword optional
+}
 
 const AdminUsersCreate: React.FC = () => {
-  const theme = useTheme()
-  const navigate = useNavigate()
-  const [formData, setFormData] = useState({
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<FormData>({
     email: "",
     username: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     company: "",
     password: "",
     confirmPassword: "",
-  })
+  });
   const [errors, setErrors] = useState({
     email: "",
     username: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     company: "",
     password: "",
     confirmPassword: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
+  });
+  const [loading, setLoading] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
-    // Clear error when user types
-    setErrors({
-      ...errors,
-      [name]: "",
-    })
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
-  const validateForm = () => {
-    let valid = true
-    const newErrors = { ...errors }
+  const validateForm = (): boolean => {
+    let valid = true;
+    const newErrors = { ...errors };
 
-    // Email validation
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
-      valid = false
+      newErrors.email = "Email is required";
+      valid = false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid"
-      valid = false
+      newErrors.email = "Email is invalid";
+      valid = false;
     }
 
-    // Username validation
     if (!formData.username.trim()) {
-      newErrors.username = "Username is required"
-      valid = false
+      newErrors.username = "Username is required";
+      valid = false;
     } else if (formData.username.length < 3) {
-      newErrors.username = "Username must be at least 3 characters"
-      valid = false
+      newErrors.username = "Username must be at least 3 characters";
+      valid = false;
     }
 
-    // Full name validation
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required"
-      valid = false
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+      valid = false;
     }
 
-    // Company validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+      valid = false;
+    }
+
     if (!formData.company.trim()) {
-      newErrors.company = "Company is required"
-      valid = false
+      newErrors.company = "Company is required";
+      valid = false;
     }
 
-    // Password validation
     if (!formData.password) {
-      newErrors.password = "Password is required"
-      valid = false
+      newErrors.password = "Password is required";
+      valid = false;
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
-      valid = false
+      newErrors.password = "Password must be at least 6 characters";
+      valid = false;
     }
 
-    // Confirm password validation
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password"
-      valid = false
+      newErrors.confirmPassword = "Please confirm your password";
+      valid = false;
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
-      valid = false
+      newErrors.confirmPassword = "Passwords do not match";
+      valid = false;
     }
 
-    setErrors(newErrors)
-    return valid
-  }
+    setErrors(newErrors);
+    return valid;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-  
-    setIsSubmitting(true);
+
+    setLoading(true);
+    setError("");
+    setSubmitSuccess(false);
+
     try {
+      const hashedPassword = await bcrypt.hash(formData.password, 10);
+
+      // Omit `confirmPassword` from the submitted data
+      const { confirmPassword, ...userToCreate } = formData;
+
       const res = await fetch("http://localhost:3001/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          username: formData.username,
-          fullName: formData.fullName,
-          company: formData.company,
-          password: formData.password,
-          // any other fields...
-        }),
+        body: JSON.stringify({ ...userToCreate, password: hashedPassword }),
       });
-  
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-  
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to create user: ${errorText || res.status}`);
+      }
+
       setSubmitSuccess(true);
+      setFormData({
+        email: "",
+        username: "",
+        firstName: "",
+        lastName: "",
+        company: "",
+        password: "",
+        confirmPassword: "",
+      });
       setTimeout(() => navigate(PATHS.ADMIN_USERS.path), 1500);
-    } catch (err) {
-      console.error("Failed to create user:", err);
-      // optionally show an error alert
+    } catch (err: any) {
+      console.error(`Error creating user: `, err);
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
+
   return (
     <AdminSidebar>
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-
         <Box sx={{ p: 3, flexGrow: 1 }}>
           <Breadcrumbs sx={{ mb: 3 }}>
             <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">
@@ -161,154 +179,144 @@ const AdminUsersCreate: React.FC = () => {
               User created successfully! Redirecting...
             </Alert>
           )}
+          {error && !submitSuccess && <Alert severity="error">{error}</Alert>}
 
           <Paper sx={{ p: 3 }}>
-            <Box component="form" onSubmit={handleSubmit} noValidate>
+            <form onSubmit={handleSubmit}>
               <Grid container spacing={3}>
+                {/* Basic User Information */}
                 <Grid item xs={12}>
                   <Typography variant="h6" gutterBottom>
-                    User Details
+                    Basic Information
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    id="email"
                     name="email"
                     label="Email Address"
-                    type="email"
                     value={formData.email}
                     onChange={handleChange}
-                    error={!!errors.email}
+                    error={Boolean(errors.email)}
                     helperText={errors.email}
-                    disabled={isSubmitting}
+                    disabled={loading}
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    id="username"
                     name="username"
                     label="Username"
                     value={formData.username}
                     onChange={handleChange}
-                    error={!!errors.username}
+                    error={Boolean(errors.username)}
                     helperText={errors.username}
-                    disabled={isSubmitting}
+                    disabled={loading}
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    id="fullName"
-                    name="fullName"
-                    label="Full Name"
-                    value={formData.fullName}
+                    name="firstName"
+                    label="First Name"
+                    value={formData.firstName}
                     onChange={handleChange}
-                    error={!!errors.fullName}
-                    helperText={errors.fullName}
-                    disabled={isSubmitting}
+                    error={Boolean(errors.firstName)}
+                    helperText={errors.firstName}
+                    disabled={loading}
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    id="company"
+                    name="lastName"
+                    label="Last Name"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    error={Boolean(errors.lastName)}
+                    helperText={errors.lastName}
+                    disabled={loading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
                     name="company"
                     label="Company"
                     value={formData.company}
                     onChange={handleChange}
-                    error={!!errors.company}
+                    error={Boolean(errors.company)}
                     helperText={errors.company}
-                    disabled={isSubmitting}
+                    disabled={loading}
                   />
                 </Grid>
 
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                {/* Password Section */}
+                <Grid item xs={12} sx={{ mt: 2 }}>
+                  <Divider />
+                  <Typography variant="h6" gutterBottom>
                     Security
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    id="password"
                     name="password"
                     label="Password"
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
-                    error={!!errors.password}
+                    error={Boolean(errors.password)}
                     helperText={errors.password}
-                    disabled={isSubmitting}
+                    disabled={loading}
                   />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <TextField
-                    required
                     fullWidth
-                    id="confirmPassword"
                     name="confirmPassword"
                     label="Confirm Password"
                     type="password"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    error={!!errors.confirmPassword}
+                    error={Boolean(errors.confirmPassword)}
                     helperText={errors.confirmPassword}
-                    disabled={isSubmitting}
+                    disabled={loading}
                   />
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
                     <Button
-                      component={Link}
-                      to={PATHS.ADMIN_USERS.path}
+                      onClick={() => navigate(-1)}
                       variant="outlined"
-                      sx={{
-                        color: "#1e5393",
-                        borderColor: "#1e5393",
-                        "&:hover": {
-                          borderColor: "#184377",
-                        },
-                      }}
-                      disabled={isSubmitting}
+                      disabled={loading}
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       variant="contained"
-                      disabled={isSubmitting}
-                      sx={{
-                        bgcolor: "#1e5393",
-                        "&:hover": {
-                          bgcolor: "#184377",
-                        },
-                      }}
+                      disabled={loading}
                     >
-                      {isSubmitting ? "Creating..." : "Create User"}
+                      {loading ? <CircularProgress size={24} /> : "Create"}
                     </Button>
                   </Box>
                 </Grid>
               </Grid>
-            </Box>
+            </form>
           </Paper>
         </Box>
       </Box>
     </AdminSidebar>
-  )
-}
+  );
+};
 
-export default AdminUsersCreate
+export default AdminUsersCreate;

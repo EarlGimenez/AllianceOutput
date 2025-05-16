@@ -480,7 +480,7 @@ export const UserProfile: React.FC = () => {
               variant="outlined"
               fullWidth
               startIcon={<PersonIcon />}
-              onClick={() => console.log("Edit profile")}
+              onClick={() => navigate("/user-settings")}
               sx={{
                 borderColor: "#1e5393",
                 color: "#1e5393",
@@ -490,7 +490,7 @@ export const UserProfile: React.FC = () => {
                 },
               }}
             >
-              Edit Profile
+              User Settings
             </Button>
           </Box>
         </Box>

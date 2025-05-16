@@ -19,40 +19,56 @@ import { SiteFooter } from "../../components/SiteFooter"
 import { PATHS } from "../../../constant"
 import bcrypt from "bcryptjs";
 
-const SignIn: React.FC = () => {
- const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
 
-  // Update the SignIn component's handleSubmit
+const SignIn: React.FC = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+
+type User = {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  // Add other fields as needed
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:3001/users?email=" + email);
-      const users = await res.json();
+      const res = await fetch(`http://localhost:3001/users?email=${email}`);
+      const users: User[] = await res.json();
 
       if (users.length === 0) {
-        setError("User not found");
-        return;
+        throw new Error("No user found with that email address.");
       }
 
       const user = users[0];
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        setError("Incorrect password");
-        return;
+      // Check if password is correct using bcrypt
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new Error("Incorrect password.");
       }
 
-      localStorage.setItem("userAuthenticated", "true");
-      localStorage.setItem("userId", user.id); // Store user ID
-      localStorage.setItem("userEmail", user.email); // Optional: store email for display
-      navigate("/user-profile");
-    } catch (err) {
-      console.error("Login error", err);
-      setError("Something went wrong. Please try again.");
+      // Set authentication state (e.g., local storage)
+      localStorage.setItem("userAuthenticated", "true"); 
+      localStorage.setItem("userId", JSON.stringify({ userId: user.id })); 
+
+      // Redirect to /user-profile or previous route
+      navigate(PATHS.USER_PROFILE.path);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
