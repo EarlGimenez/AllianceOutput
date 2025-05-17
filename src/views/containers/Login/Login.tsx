@@ -61,7 +61,7 @@ type User = {
 
       // Set authentication state (e.g., local storage)
       localStorage.setItem("userAuthenticated", "true"); 
-      localStorage.setItem("userId", JSON.stringify({ userId: user.id })); 
+      localStorage.setItem("userId", user.id); 
 
       // Redirect to /user-profile or previous route
       navigate(PATHS.USER_PROFILE.path);

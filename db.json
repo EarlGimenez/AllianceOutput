@@ -46,6 +46,13 @@
       "location": "1st Floor East Wing",
       "timeStart": "08:00",
       "timeEnd": "18:00"
+    },
+    {
+      "id": "db31",
+      "name": "Hellowowrkd",
+      "location": "ako",
+      "timeStart": "08:00",
+      "timeEnd": "18:00"
     }
   ],
   "users": [
@@ -85,7 +92,7 @@
       "company": "Umbrella Corp"
     },
     {
-      "id": 1747412561686,
+      "id": "1747412561686",
       "firstName": "teestes",
       "lastName": "test",
       "username": "testt3esdts",
@@ -168,8 +175,8 @@
       "endTime": "10:00",
       "roomId": "1",
       "description": "testtest",
-      "userId": "{\"userId\":\"c584\"}",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250520T155959Z"
+      "userId": "c584",
+      "recurrenceRule": "RRULE:FREQ=WEEKLY;BYDAY=MO,WE,SA;UNTIL=20250617T000000Z"
     }
   ]
 }

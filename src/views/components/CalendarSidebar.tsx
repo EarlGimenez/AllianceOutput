@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, Drawer, Typography, Paper, InputBase, IconButton, Grid, Card, CardMedia, CardContent } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Drawer, Typography, Paper, InputBase, IconButton, Grid, Card, CardMedia, CardContent, Dialog, DialogTitle, DialogContent } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import BookingForm from './BookingForm';
 import { Room } from './CalendarEvents';
 
 interface CalendarSidebarProps {
@@ -11,6 +12,7 @@ interface CalendarSidebarProps {
   onSearchChange: (query: string) => void;
 }
 
+// CalendarSidebar.tsx
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   open,
   onToggle,
@@ -18,6 +20,19 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+
+  const handleRoomClick = (room: Room) => {
+    setSelectedRoom(room);
+    setIsBookingFormOpen(true);
+  };
+
+  const handleCloseBookingForm = () => {
+    setIsBookingFormOpen(false);
+    setSelectedRoom(null);
+  };
+
   return (
     <Drawer
       variant="persistent"
@@ -78,6 +93,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                       boxShadow: 3,
                     },
                   }}
+                  onClick={() => handleRoomClick(room)}
                 >
                   <CardMedia
                     component="img"
@@ -106,8 +122,20 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
           </Typography>
         )}
       </Box>
+      <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>Create Booking</DialogTitle>
+        <DialogContent>
+          <BookingForm
+            rooms={rooms}
+            onSubmit={() => {}}
+            onCancel={handleCloseBookingForm}
+            initialData={{ roomId: selectedRoom?.id }}
+          />
+        </DialogContent>
+      </Dialog>
     </Drawer>
   );
 };
+
 
 export default CalendarSidebar;

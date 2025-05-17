@@ -81,7 +81,7 @@ const Register: React.FC = () => {
       // Authenticate and redirect to /user-profile
       const user = await res.json();
       localStorage.setItem("userAuthenticated", "true"); 
-      localStorage.setItem("userId", JSON.stringify({ userId: user.id }));  
+      localStorage.setItem("userId", user.id);  
 
       navigate(PATHS.USER_PROFILE.path);
     } catch (err: any) {

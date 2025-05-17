@@ -53,6 +53,45 @@ const isEventVisible = (event: CalendarEvent, roomId: string, displayDate: Date)
     return eventDate.getTime() === displayDate.getTime();
 };
 
+const getEventsForDate = (date: Date, roomId: string): CalendarEvent[] => {
+    return events.filter(event => {
+      if (event.roomId !== roomId) return false;
+      
+      const eventDate = new Date(event.date);
+      const displayDate = new Date(date);
+      
+      if (!event.recurrenceRule) {
+        return eventDate.toDateString() === displayDate.toDateString();
+      }
+
+      const rule = event.recurrenceRule;
+      const freqMatch = rule.match(/FREQ=([A-Z]+)/);
+      const freq = freqMatch ? freqMatch[1] : 'DAILY';
+      
+      const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+      const days = byDayMatch ? byDayMatch[1].split(',') : [];
+      
+      const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+      const untilDate = untilMatch ? new Date(
+        untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+      ) : null;
+
+      if (displayDate < eventDate) return false;
+      if (untilDate && displayDate > untilDate) return false;
+
+      if (freq === 'DAILY') {
+        return true;
+      } else if (freq === 'WEEKLY') {
+        const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
+        return days.length === 0 || days.includes(currentDay);
+      } else if (freq === 'MONTHLY') {
+        return displayDate.getDate() === eventDate.getDate();
+      }
+
+      return false;
+    });
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ flexGrow: 1, overflow: 'auto', pb: 2 }}>
@@ -89,45 +128,43 @@ const isEventVisible = (event: CalendarEvent, roomId: string, displayDate: Date)
                 <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>{room.name}</Typography>
               </Paper>
               <Box sx={{ position: 'relative', height: `${timeSlots.length * 60}px` }}>
-                {events
-                  .filter(event => isEventVisible(event, room.id, currentDate))
-                  .map(event => (
-                    <Paper
-                      elevation={2}
-                      key={event.id}
-                      sx={{
-                        position: 'absolute',
-                        left: '4px',
-                        right: '4px',
-                        top: calculateEventPosition(event.startTime),
-                        height: calculateEventHeight(event.startTime, event.endTime),
-                        bgcolor: generateBookingColor(event.id),
-                        color: 'white',
-                        p: 1,
-                        borderRadius: 1,
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                        '&:hover': { opacity: 0.9 },
-                      }}
-                      onClick={() => onEventClick(event)}
-                    >
-                      <Typography variant="body2" sx={{ 
-                        fontWeight: 'bold', 
-                        whiteSpace: 'nowrap', 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis' 
-                      }}>
-                        {event.title}
-                      </Typography>
-                      <Typography variant="caption" sx={{ 
-                        whiteSpace: 'nowrap', 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis' 
-                      }}>
-                        {`${event.startTime} - ${event.endTime}`}
-                      </Typography>
-                    </Paper>
-                  ))}
+                {getEventsForDate(currentDate, room.id).map(event => (
+                  <Paper
+                    elevation={2}
+                    key={event.id}
+                    sx={{
+                      position: 'absolute',
+                      left: '4px',
+                      right: '4px',
+                      top: calculateEventPosition(event.startTime),
+                      height: calculateEventHeight(event.startTime, event.endTime),
+                      bgcolor: generateBookingColor(event.id),
+                      color: 'white',
+                      p: 1,
+                      borderRadius: 1,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      '&:hover': { opacity: 0.9 },
+                    }}
+                    onClick={() => onEventClick(event)}
+                  >
+                    <Typography variant="body2" sx={{ 
+                      fontWeight: 'bold', 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis' 
+                    }}>
+                      {event.title}
+                    </Typography>
+                    <Typography variant="caption" sx={{ 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis' 
+                    }}>
+                      {`${event.startTime} - ${event.endTime}`}
+                    </Typography>
+                  </Paper>
+                ))}
               </Box>
             </Box>
           ))}

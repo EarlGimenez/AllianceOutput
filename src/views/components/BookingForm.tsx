@@ -534,11 +534,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
             <Button onClick={onCancel} variant="outlined">
               Cancel
             </Button>
-            { isOwner ? (
               <Button type="submit" variant="contained" color="primary">
               { isEditing ? 'Save Changes' : 'Create Booking' }
             </Button>
-            ) : '' }
           </Box>
         </Grid>
       </Grid>
