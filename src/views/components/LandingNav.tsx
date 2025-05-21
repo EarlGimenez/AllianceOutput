@@ -64,12 +64,10 @@ export const LandingNav: React.FC = () => {
   ]
 
   // Admin should not appear if logged in
-  const adminNavItem = { name: "Admin", path: PATHS.ADMIN_LOGIN.path }
 
   const fullNavItems = [
     ...navItems,
     ...(isAuthenticated ? userNavItems : guestNavItems),
-    ...(isAuthenticated ? [] : [adminNavItem]), // Exclude Admin if logged in
   ]
 
   const isActive = (path: string) => location.pathname === path

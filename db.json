@@ -1,14 +1,6 @@
 {
   "rooms": [
     {
-      "id": "1",
-      "name": "Conference Room A",
-      "location": "1st Floor, East Wing",
-      "timeStart": "08:00",
-      "timeEnd": "18:00",
-      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
-    },
-    {
       "id": "2",
       "name": "School Classroom",
       "location": "2nd Floor, West Wing",
@@ -51,6 +43,13 @@
       "id": "db31",
       "name": "Hellowowrkd",
       "location": "ako",
+      "timeStart": "08:00",
+      "timeEnd": "18:00"
+    },
+    {
+      "id": "69bd",
+      "name": "Test",
+      "location": "Test Room",
       "timeStart": "08:00",
       "timeEnd": "18:00"
     }
@@ -133,6 +132,31 @@
       "username": "testtesttesttest",
       "email": "testtest@testtesttest.com",
       "password": "$2b$10$xgGo0TiXh9rODEDTCBBhQeEPc21u.72BOqIbsvz/v4/u4rCi5RStS"
+    },
+    {
+      "id": "8a98",
+      "firstName": "Test FirstName",
+      "lastName": "Test Last Name",
+      "username": "Tets Username",
+      "email": "Test@mail.com",
+      "password": "$2b$10$uJIQuu6ubcyIAR4ak8jl3.FZlCRdzpT6eF0vc2LPrrJ/Qljn2c6va"
+    },
+    {
+      "id": "7fa4",
+      "email": "Test@testtest.com",
+      "username": "Tester",
+      "firstName": "Test",
+      "lastName": "Tester",
+      "company": "Test",
+      "password": "$2b$10$/jk1zSQL597LsBkqTgnVyu4jJPcuD56YFTUHGbsU/m2Bbp9Egp.US"
+    },
+    {
+      "id": "d62b",
+      "firstName": "TEST",
+      "lastName": "TEST",
+      "username": "TESTESTTEST",
+      "email": "TEST@TESTESTESTET.COM",
+      "password": "$2b$10$My6iZhOZHXtCxv/vffr6UevzUXwveDwD5N0XM6p7p4eZyYl4hsbzG"
     }
   ],
   "bookings": [
@@ -153,7 +177,7 @@
       "date": "2025-05-14",
       "startTime": "09:00",
       "endTime": "10:00",
-      "roomId": "1",
+      "roomId": null,
       "description": "",
       "userId": "1747204166579"
     },
@@ -163,20 +187,31 @@
       "date": "2025-05-14",
       "startTime": "10:00",
       "endTime": "11:00",
-      "roomId": "1",
+      "roomId": null,
       "description": "",
       "userId": "1747204166579"
     },
     {
-      "id": "d120",
+      "id": "d7fe",
+      "title": "Test Booking",
+      "date": "2025-05-17",
+      "startTime": "11:00",
+      "endTime": "12:00",
+      "roomId": null,
+      "description": "Test Description",
+      "userId": "8a98",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250520T155959Z"
+    },
+    {
+      "id": "5cd2",
       "title": "Test",
       "date": "2025-05-17",
-      "startTime": "09:00",
-      "endTime": "10:00",
-      "roomId": "1",
-      "description": "testtest",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "roomId": null,
+      "description": "",
       "userId": "c584",
-      "recurrenceRule": "RRULE:FREQ=WEEKLY;BYDAY=MO,WE,SA;UNTIL=20250617T000000Z"
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250519T155959Z"
     }
   ]
 }
