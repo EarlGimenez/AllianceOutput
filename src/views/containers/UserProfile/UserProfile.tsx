@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"
 import {
   Box,
@@ -51,16 +51,21 @@ import { SiteFooter } from "../../components/SiteFooter"
 import BookingForm from "../../components/BookingForm"
 import { createBooking, updateBooking, deleteBooking } from "../../services/bookingService"
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
+import { getRooms } from '../../services/roomService';
+import { parseRecurrenceRule, timeRangesOverlap } from '../../services/bookingService';
+import { format } from 'date-fns'
 
+interface BaseBooking {
+  room: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  date: Date;
+  color: string;
+}
 
-interface Booking {
-  id: string
-  room: string
-  startTime: string
-  endTime: string
-  location: string
-  date: Date
-  color: string
+interface Booking extends BaseBooking {
+  id: string;
 }
 
 interface CalendarProps {
@@ -117,289 +122,313 @@ export const UserProfile: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const navigate = useNavigate()
-   const username = localStorage.getItem('user.name') || 'John Doe';
+  const username = localStorage.getItem('user.name') || 'John Doe';
   const email = localStorage.getItem('user.email') || 'john.doe@example.com';
   const avatarInitial = username.charAt(0).toUpperCase();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
-   const rooms: Room[] = [
-      'Meeting Room',
-      'School Classroom',
-      'Professional Studio',
-      'Science Lab',
-      'Coworking Space',
-    ];
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const roomsData = await getRooms();
+        setRooms(roomsData);
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    };
+  
+    fetchRooms();
+  }, []);
 
-  // Sample bookings data
-  const [bookings, setBookings] = useState<Booking[]>([
-    {
-      id: "1",
-      room: "Conference Room A",
-      startTime: "10:00 AM",
-      endTime: "11:30 AM",
-      location: "Building 3, Floor 2",
-      date: new Date(2025, 4, 5),
-      color: "primary",
-    },
-    {
-      id: "2",
-      room: "Meeting Room B",
-      startTime: "2:00 PM",
-      endTime: "3:00 PM",
-      location: "Building 2, Floor 1",
-      date: new Date(2025, 4, 5),
-      color: "success",
-    },
-    {
-      id: "3",
-      room: "Auditorium",
-      startTime: "4:30 PM",
-      endTime: "6:00 PM",
-      location: "Main Building",
-      date: new Date(2025, 4, 5),
-      color: "secondary",
-    },
-  ])
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const userId = localStorage.getItem('userId') || '';
+        const bookingsData = await getBookings(userId);
+        const formattedBookings: Booking[] = bookingsData.map((booking: CalendarEvent) => ({
+          id: booking.id,
+          room: booking.room.name,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          location: booking.room.location,
+          date: new Date(booking.date),
+          color: "primary", // You may need to map color logic 
+        }));
+        setBookings(formattedBookings);
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+      }
+    };
+  
+    fetchBookings();
+  }, []);
+
+  const getBookings = async (userId: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/bookings?userId=${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch bookings');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      return [];
+    }
+  };
 
   const handleOpenBookingForm = (eventToEdit?: CalendarEvent, dateForNew?: Date) => {
     if (eventToEdit) {
-      setEditingEvent(eventToEdit)
-      setFormDate(eventToEdit.date ? new Date(eventToEdit.date + 'T00:00:00') : undefined)
+      setEditingEvent(eventToEdit);
+      setFormDate(eventToEdit.date ? new Date(eventToEdit.date + 'T00:00:00') : undefined);
     } else {
-      setEditingEvent(undefined)
-      setFormDate(dateForNew || new Date())
+      setEditingEvent(undefined);
+      setFormDate(dateForNew || new Date());
     }
-    setIsBookingFormOpen(true)
-  }
+    setIsBookingFormOpen(true);
+  };
 
   const handleCloseBookingForm = () => {
-    setIsBookingFormOpen(false)
-    setEditingEvent(undefined)
-  }
+    setIsBookingFormOpen(false);
+    setEditingEvent(undefined);
+  };
 
   const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
     try {
       const adjustToLocalDate = (dateStr: string) => {
-        const date = new Date(dateStr)
+        const date = new Date(dateStr);
         return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
           .toISOString()
-          .split('T')[0]
-      }
+          .split('T')[0];
+      };
 
       const bookingDate = bookingData.date 
         ? adjustToLocalDate(bookingData.date)
-        : adjustToLocalDate(new Date().toISOString())
+        : adjustToLocalDate(new Date().toISOString());
 
       if (bookingData.id) {
         // Update existing booking
         const updatedBooking = await updateBooking(bookingData.id, {
           ...bookingData,
-          date: bookingDate
-        })
+          date: bookingDate,
+          roomId: bookingData.room?.id,
+        } as Partial<CalendarEvent>);
         // Update your bookings state here
-        console.log('Booking updated:', updatedBooking)
+        console.log('Booking updated:', updatedBooking);
+        setBookings((prevBookings) =>
+          prevBookings.map((booking) => {
+            if (booking.id === updatedBooking.id) {
+              return {
+                ...booking,
+                room: rooms.find((room) => room.id === updatedBooking.roomId)?.name || '',
+                startTime: updatedBooking.startTime,
+                endTime: updatedBooking.endTime,
+                location: rooms.find((room) => room.id === updatedBooking.roomId)?.location || '',
+                date: new Date(updatedBooking.date),
+              };
+            }
+            return booking;
+          })
+        );
       } else {
         // Create new booking
         const newBooking = await createBooking({
           ...bookingData,
           date: bookingDate,
-          userId: localStorage.getItem('userId') || ''
-        } as Omit<CalendarEvent, 'id'>)
+          userId: localStorage.getItem('userId') || '',
+          roomId: bookingData.room?.id,
+        } as Omit<CalendarEvent, 'id'>);
         
         // Add to your bookings state here
-        console.log('Booking created:', newBooking)
+        console.log('Booking created:', newBooking);
+        setBookings((prevBookings) => [
+          ...prevBookings,
+          {
+            id: newBooking.id,
+            room: rooms.find((room) => room.id === newBooking.roomId)?.name || '',
+            startTime: newBooking.startTime,
+            endTime: newBooking.endTime,
+            location: rooms.find((room) => room.id === newBooking.roomId)?.location || '',
+            date: new Date(newBooking.date),
+            color: "primary", // Adjust color logic as needed
+          },
+        ]);
       }
-      handleCloseBookingForm()
+      handleCloseBookingForm();
     } catch (error) {
-      console.error('Error saving booking:', error)
-      alert('Failed to save booking')
+      console.error('Error saving booking:', error);
+      alert('Failed to save booking');
     }
-  }
+  };
 
   const handleRequestDelete = (eventId: string) => {
-    setEventToDeleteId(eventId)
-    setDeleteConfirmOpen(true)
+    setEventToDeleteId(eventId);
+    setDeleteConfirmOpen(true);
     if (editingEvent?.id === eventId) {
-      handleCloseBookingForm()
+      handleCloseBookingForm();
     }
-  }
+  };
 
   const handleCloseDeleteConfirm = () => {
-    setDeleteConfirmOpen(false)
-    setEventToDeleteId(null)
-  }
+    setDeleteConfirmOpen(false);
+    setEventToDeleteId(null);
+  };
 
   const handleConfirmDelete = async () => {
-    if (!eventToDeleteId) return
+    if (!eventToDeleteId) return;
     
     try {
-      await deleteBooking(eventToDeleteId)
-      // Remove from your bookings state here
-      console.log('Booking deleted:', eventToDeleteId)
-      handleCloseDeleteConfirm()
+      await deleteBooking(eventToDeleteId);
+      setBookings((prevBookings) => prevBookings.filter((booking) => booking.id !== eventToDeleteId));
+      console.log('Booking deleted:', eventToDeleteId);
+      handleCloseDeleteConfirm();
     } catch (error) {
-      console.error('Error deleting booking:', error)
-      alert('Failed to delete booking')
+      console.error('Error deleting booking:', error);
+      alert('Failed to delete booking');
     }
-  }
+  };
 
-  // Filter bookings for the selected date or all if showAllBookings is true
-  const filteredBookings = showAllBookings
-    ? bookings
-    : bookings.filter((booking) => booking.date.toDateString() === selectedDate.toDateString())
+  const getColorForBooking = (color: string) => {
+    switch (color) {
+      case "primary":
+        return "#1e88e5";
+      case "secondary":
+        return "#9c27b0";
+      case "success":
+        return "#4caf50";
+      default:
+        return "#1e88e5";
+    }
+  };
 
-  // Generate calendar days
+  const getBackgroundColorForBooking = (color: string) => {
+    switch (color) {
+      case "primary":
+        return "#bbdefb";
+      case "secondary":
+        return "#e1bee7";
+      case "success":
+        return "#c8e6c9";
+      default:
+        return "#bbdefb";
+    }
+  };
+
   const generateCalendarDays = () => {
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
 
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
 
-    const daysInMonth = lastDay.getDate()
-    const days = []
+    const daysInMonth = lastDay.getDate();
+    const days = [];
 
-    // Add days from previous month to fill first week
-    const firstDayOfWeek = firstDay.getDay()
+    const firstDayOfWeek = firstDay.getDay();
 
-    // Add days of current month
     for (let i = 1; i <= daysInMonth; i++) {
       days.push({
         date: new Date(year, month, i),
         dayOfMonth: i,
         isCurrentMonth: true,
-      })
+      });
     }
 
-    return days
-  }
+    return days;
+  };
 
-  const calendarDays = generateCalendarDays()
+  const calendarDays = generateCalendarDays();
 
-  // Get day of week abbreviations
-  const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+  const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-  // Handle previous and next month
   const goToPreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
-  }
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
 
   const goToNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
-  }
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
 
-  // Format date for display
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-    })
-  }
+    });
+  };
 
-  // Format date for table display
   const formatShortDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    })
-  }
+    });
+  };
 
-  // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue)
-  }
+    setTabValue(newValue);
+  };
 
-  // Handle booking actions
   const handleEdit = (booking: Booking) => {
-    setSelectedBooking(booking)
-    setEditDialogOpen(true)
-  }
+    setSelectedBooking(booking);
+    setEditDialogOpen(true);
+  };
 
   const handleCancel = (booking: Booking) => {
-    setSelectedBooking(booking)
-    setCancelDialogOpen(true)
-  }
+    setSelectedBooking(booking);
+    setCancelDialogOpen(true);
+  };
 
   const handleCloseEditDialog = () => {
-    setEditDialogOpen(false)
-    setSelectedBooking(null)
-  }
+    setEditDialogOpen(false);
+    setSelectedBooking(null);
+  };
 
   const handleCloseCancelDialog = () => {
-    setCancelDialogOpen(false)
-    setSelectedBooking(null)
-  }
+    setCancelDialogOpen(false);
+    setSelectedBooking(null);
+  };
 
   const handleSaveEdit = () => {
-    // In a real app, you would update the booking in your database
-    console.log(`Saving edits for booking ${selectedBooking?.id}`)
-    setEditDialogOpen(false)
-    setSelectedBooking(null)
-  }
+    setEditDialogOpen(false);
+    setSelectedBooking(null);
+  };
 
   const handleConfirmCancel = () => {
     if (selectedBooking) {
-      // In a real app, you would delete the booking from your database
-      setBookings(bookings.filter((booking) => booking.id !== selectedBooking.id))
-      console.log(`Cancelling booking ${selectedBooking.id}`)
-      setCancelDialogOpen(false)
-      setSelectedBooking(null)
+      setBookings(bookings.filter((booking) => booking.id !== selectedBooking.id));
+      setCancelDialogOpen(false);
+      setSelectedBooking(null);
     }
-  }
+  };
 
-  const getColorForBooking = (color: string) => {
-    switch (color) {
-      case "primary":
-        return "#1e88e5" // blue
-      case "secondary":
-        return "#9c27b0" // purple
-      case "success":
-        return "#4caf50" // green
-      default:
-        return "#1e88e5" // default blue
-    }
-  }
-
-  const getBackgroundColorForBooking = (color: string) => {
-    switch (color) {
-      case "primary":
-        return "#bbdefb" // light blue
-      case "secondary":
-        return "#e1bee7" // light purple
-      case "success":
-        return "#c8e6c9" // light green
-      default:
-        return "#bbdefb" // default light blue
-    }
-  }
-
-  // Generate time slots for the calendar view
   const timeSlots = Array.from({ length: 12 }, (_, i) => {
-    const hour = i + 8 // Start at 8 AM
-    return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? "PM" : "AM"}`
-  })
+    const hour = i + 8;
+    return `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? "PM" : "AM"}`;
+  });
 
-  // Find bookings for a specific time slot
   const getBookingsForTimeSlot = (timeSlot: string) => {
     return filteredBookings.filter((booking) => {
-      const startHour = Number.parseInt(booking.startTime.split(":")[0])
-      const startPeriod = booking.startTime.includes("PM") ? "PM" : "AM"
-      const slotHour = Number.parseInt(timeSlot.split(":")[0])
-      const slotPeriod = timeSlot.includes("PM") ? "PM" : "AM"
+      const startHour = Number.parseInt(booking.startTime.split(":")[0]);
+      const startPeriod = booking.startTime.includes("PM") ? "PM" : "AM";
+      const slotHour = Number.parseInt(timeSlot.split(":")[0]);
+      const slotPeriod = timeSlot.includes("PM") ? "PM" : "AM";
 
-      return startHour === slotHour && startPeriod === slotPeriod
-    })
-  }
+      return startHour === slotHour && startPeriod === slotPeriod;
+    });
+  };
+
+  const filteredBookings = showAllBookings
+    ? bookings
+    : bookings.filter(
+        (booking) => booking.date.toDateString() === selectedDate.toDateString()
+      );
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "#fff" }}>
       <LandingNav />
 
-      {/* Main layout with sidebar and content */}
       <Box component="main" sx={{ flexGrow: 1, display: "flex", height: "calc(100vh - 64px)" }}>
-        {/* Left sidebar */}
         <Box
           sx={{
             width: 300,
@@ -410,48 +439,52 @@ export const UserProfile: React.FC = () => {
             display: { xs: "none", md: "block" },
           }}
         >
-           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-      <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: '#ccc' }} alt={username}>
-        {avatarInitial}
-      </Avatar>
-      <Typography variant="h5" component="h2" gutterBottom>
-        {username}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {email}
-      </Typography>
-    </Box>
-
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+            <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: '#ccc' }} alt={username}>
+              {avatarInitial}
+            </Avatar>
+            <Typography variant="h5" component="h2" gutterBottom>
+              {username}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {email}
+            </Typography>
+          </Box>
           <Typography variant="h6" component="h3" gutterBottom>
             Upcoming Bookings
           </Typography>
-
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
               <IconButton size="small" onClick={goToPreviousMonth}>
                 <ChevronLeftIcon />
               </IconButton>
               <Typography variant="subtitle1">
-                {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                {currentMonth.toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
               </Typography>
               <IconButton size="small" onClick={goToNextMonth}>
                 <ChevronRightIcon />
               </IconButton>
             </Box>
-
             <Grid container spacing={1}>
               {weekdays.map((day) => (
                 <Grid item key={day} xs={12 / 7}>
-                  <Typography variant="caption" align="center" sx={{ display: "block", fontWeight: "medium" }}>
+                  <Typography
+                    variant="caption"
+                    align="center"
+                    sx={{ display: "block", fontWeight: "medium" }}
+                  >
                     {day}
                   </Typography>
                 </Grid>
               ))}
-
               {calendarDays.map((day, index) => {
-                const isSelected = day.date.toDateString() === selectedDate.toDateString()
-                const hasBooking = bookings.some((booking) => booking.date.toDateString() === day.date.toDateString())
-
+                const isSelected = day.date.toDateString() === selectedDate.toDateString();
+                const hasBooking = bookings.some(
+                  (booking) => booking.date.toDateString() === day.date.toDateString()
+                );
                 return (
                   <Grid item key={index} xs={12 / 7}>
                     <Box
@@ -474,11 +507,10 @@ export const UserProfile: React.FC = () => {
                       <Typography variant="body2">{day.dayOfMonth}</Typography>
                     </Box>
                   </Grid>
-                )
+                );
               })}
             </Grid>
           </Box>
-
           <Box sx={{ mt: "auto" }}>
             <Button
               variant="outlined"
@@ -498,8 +530,6 @@ export const UserProfile: React.FC = () => {
             </Button>
           </Box>
         </Box>
-
-        {/* Main content */}
         <Box sx={{ flexGrow: 1, p: 3, overflow: "auto", height: "100%" }}>
           <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 500 }}>
@@ -519,7 +549,6 @@ export const UserProfile: React.FC = () => {
               Create Booking
             </Button>
           </Box>
-
           <Box sx={{ p: 2, mb: 3, border: "1px solid #eee", borderRadius: 1 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Typography variant="h6">{formatDate(selectedDate)}</Typography>
@@ -535,7 +564,6 @@ export const UserProfile: React.FC = () => {
               />
             </Box>
           </Box>
-
           <Box sx={{ width: "100%" }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
               <Tabs
@@ -553,15 +581,12 @@ export const UserProfile: React.FC = () => {
                 <Tab icon={<EventIcon sx={{ mr: 1 }} />} label="Calendar View" {...a11yProps(2)} />
               </Tabs>
             </Box>
-
-            {/* List View */}
             <TabPanel value={tabValue} index={0}>
               <Box sx={{ mb: 3 }}>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                   <PersonIcon sx={{ mr: 1 }} />
                   <Typography variant="h6">My Bookings</Typography>
                 </Box>
-
                 {filteredBookings.length > 0 ? (
                   filteredBookings.map((booking) => (
                     <Box
@@ -591,7 +616,6 @@ export const UserProfile: React.FC = () => {
                         >
                           <CalendarMonthIcon sx={{ color: getColorForBooking(booking.color) }} />
                         </Box>
-
                         <Box sx={{ flexGrow: 1 }}>
                           <Typography variant="h6" component="h3">
                             {booking.room}
@@ -617,7 +641,6 @@ export const UserProfile: React.FC = () => {
                             </Box>
                           )}
                         </Box>
-
                         <Box>
                           <Button
                             variant="outlined"
@@ -656,8 +679,6 @@ export const UserProfile: React.FC = () => {
                 )}
               </Box>
             </TabPanel>
-
-            {/* Table View */}
             <TabPanel value={tabValue} index={1}>
               <TableContainer>
                 <Table sx={{ minWidth: 650 }} aria-label="bookings table">
@@ -713,8 +734,8 @@ export const UserProfile: React.FC = () => {
                               variant="outlined"
                               color="error"
                               size="small"
-                              startIcon={<DeleteIcon />}
-                              onClick={() => handleCancel(booking)}
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleCancel(booking)}
                             >
                               Cancel
                             </Button>
@@ -732,8 +753,6 @@ export const UserProfile: React.FC = () => {
                 </Table>
               </TableContainer>
             </TabPanel>
-
-            {/* Calendar View */}
             <TabPanel value={tabValue} index={2}>
               <Paper sx={{ p: 2, mb: 3, border: "1px solid #eee", boxShadow: "none" }}>
                 <Grid container>
@@ -765,7 +784,7 @@ export const UserProfile: React.FC = () => {
                       {formatShortDate(selectedDate)}
                     </Typography>
                     {timeSlots.map((slot, index) => {
-                      const slotBookings = getBookingsForTimeSlot(slot)
+                      const slotBookings = getBookingsForTimeSlot(slot);
                       return (
                         <Box
                           key={index}
@@ -817,7 +836,7 @@ export const UserProfile: React.FC = () => {
                               ))
                             : null}
                         </Box>
-                      )
+                      );
                     })}
                   </Grid>
                 </Grid>
@@ -826,8 +845,6 @@ export const UserProfile: React.FC = () => {
           </Box>
         </Box>
       </Box>
-
-      {/* Edit Booking Dialog */}
       <Dialog open={editDialogOpen} onClose={handleCloseEditDialog}>
         <DialogTitle>Edit Booking</DialogTitle>
         <DialogContent>
@@ -851,7 +868,7 @@ export const UserProfile: React.FC = () => {
                   type="date"
                   fullWidth
                   variant="outlined"
-                  defaultValue={selectedBooking?.date.toISOString().split("T")[0]}
+                  defaultValue={format(selectedBooking?.date || new Date(), 'yyyy-MM-dd')} // Using date-fns format
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
@@ -918,8 +935,6 @@ export const UserProfile: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Cancel Booking Dialog */}
       <Dialog open={cancelDialogOpen} onClose={handleCloseCancelDialog}>
         <DialogTitle>Cancel Booking</DialogTitle>
         <DialogContent>
@@ -935,8 +950,6 @@ export const UserProfile: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Booking Form Dialog */}
       <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>{editingEvent?.id ? 'Edit Booking' : 'Create Booking'}</DialogTitle>
         <DialogContent>
@@ -950,8 +963,6 @@ export const UserProfile: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
         onClose={handleCloseDeleteConfirm}
@@ -973,10 +984,9 @@ export const UserProfile: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       <SiteFooter />
     </Box>
-  )
-}
+  );
+};
 
-export default UserProfile
+export default UserProfile;
