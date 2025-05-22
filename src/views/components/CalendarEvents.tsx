@@ -10,12 +10,3 @@ export interface CalendarEvent {
   recurrenceRule?: string;
   userId: string;
 }
-
-export interface Room {
-  id: string; // Ensure each Room has a unique id
-  name: string;
-  location: string;
-  timeStart: string;
-  timeEnd: string;
-  image: string;
-}

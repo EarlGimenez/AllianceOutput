@@ -1,7 +1,7 @@
-"use client"
+// AdminRoomsCreate.tsx (Updated)
+"use client";
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState, ChangeEvent, useRef } from "react";
 import {
   Box,
   Typography,
@@ -12,105 +12,139 @@ import {
   Breadcrumbs,
   Link as MuiLink,
   useTheme,
+  Input,
+  CircularProgress,
   Alert,
-} from "@mui/material"
-import { Link, useNavigate } from "react-router-dom"
-import { AdminSidebar } from "../../../../components/AdminSidebar"
-import { AdminHeader } from "../../../../components/AdminHeader"
-import { PATHS } from "../../../../../constant"
+} from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import { AdminSidebar } from "../../../../components/AdminSidebar";
+import { PATHS } from "../../../../../constant";
 
 const AdminRoomsCreate: React.FC = () => {
-  const theme = useTheme()
-  const navigate = useNavigate()
+  const theme = useTheme();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     location: "",
     timeStart: "08:00",
     timeEnd: "18:00",
-  })
+    purpose: "",
+    image: "",
+  });
   const [errors, setErrors] = useState({
     name: "",
     location: "",
     timeStart: "",
     timeEnd: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-    // Clear error when user types
+    });
     setErrors({
       ...errors,
       [name]: "",
-    })
-  }
+    });
+  };
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+    }
+  };
 
   const validateForm = () => {
-    let valid = true
-    const newErrors = { ...errors }
+    let valid = true;
+    const newErrors = { ...errors };
 
     if (!formData.name.trim()) {
-      newErrors.name = "Room name is required"
-      valid = false
+      newErrors.name = "Room name is required";
+      valid = false;
     }
 
     if (!formData.location.trim()) {
-      newErrors.location = "Location is required"
-      valid = false
+      newErrors.location = "Location is required";
+      valid = false;
     }
 
     if (!formData.timeStart) {
-      newErrors.timeStart = "Start time is required"
-      valid = false
+      newErrors.timeStart = "Start time is required";
+      valid = false;
     }
 
     if (!formData.timeEnd) {
-      newErrors.timeEnd = "End time is required"
-      valid = false
+      newErrors.timeEnd = "End time is required";
+      valid = false;
     }
 
-    // Check if end time is after start time
     if (formData.timeStart && formData.timeEnd && formData.timeStart >= formData.timeEnd) {
-      newErrors.timeEnd = "End time must be after start time"
-      valid = false
+      newErrors.timeEnd = "End time must be after start time";
+      valid = false;
     }
 
-    setErrors(newErrors)
-    return valid
-  }
-
-// … inside AdminRoomsCreate …
+    setErrors(newErrors);
+    return valid;
+  };
 
 const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-  
-    setIsSubmitting(true);
+  e.preventDefault(); 
+  if (!validateForm()) return; 
+
+  setIsSubmitting(true);
+  let imagePath = "";
+
+  if (imageFile) {
+    const formData = new FormData(); 
+    formData.append('image', imageFile); 
     try {
-      const res = await fetch("http://localhost:3001/rooms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      setSubmitSuccess(true);
-      setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
-    } catch (err) {
-      console.error("Create room failed:", err);
-    } finally {
+      const res = await fetch('http://localhost:3002/api/rooms/upload-image', {
+        method: 'POST',
+        body: formData,
+      }); 
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`); 
+      ({ imagePath } = await res.json()); 
+    } catch (err) { 
+      console.error(err);
       setIsSubmitting(false);
+      return;
     }
+  }
+
+  const newRoom = {
+    name: formData.name,
+    location: formData.location,
+    timeStart: formData.timeStart,
+    timeEnd: formData.timeEnd,
+    purpose: formData.purpose,
+    image: imagePath, 
   };
-  
+
+  try {
+    const res = await fetch('http://localhost:3001/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newRoom),
+    }); 
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`); 
+    setSubmitSuccess(true);
+    setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
+  } catch (err) { 
+    console.error(err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
   return (
     <AdminSidebar>
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-
         <Box sx={{ p: 3, flexGrow: 1 }}>
           <Breadcrumbs sx={{ mb: 3 }}>
             <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">
@@ -172,6 +206,24 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <TextField
                     required
                     fullWidth
+                    id="purpose"
+                    name="purpose"
+                    label="Purpose"
+                    value={formData.purpose}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Input type="file" inputProps={{ accept: "image/*" }} onChange={handleImageChange} />
+                  {imageFile && <img src={URL.createObjectURL(imageFile)} alt="Preview" style={{ maxWidth: 100, maxHeight: 100 }} />}
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    required
+                    fullWidth
                     id="timeStart"
                     name="timeStart"
                     label="Available From"
@@ -180,9 +232,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={handleChange}
                     error={!!errors.timeStart}
                     helperText={errors.timeStart}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     disabled={isSubmitting}
                   />
                 </Grid>
@@ -199,9 +249,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={handleChange}
                     error={!!errors.timeEnd}
                     helperText={errors.timeEnd}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     disabled={isSubmitting}
                   />
                 </Grid>
@@ -215,9 +263,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       sx={{
                         color: "#1e5393",
                         borderColor: "#1e5393",
-                        "&:hover": {
-                          borderColor: "#184377",
-                        },
+                        "&:hover": { borderColor: "#184377" },
                       }}
                       disabled={isSubmitting}
                     >
@@ -229,9 +275,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       disabled={isSubmitting}
                       sx={{
                         bgcolor: "#1e5393",
-                        "&:hover": {
-                          bgcolor: "#184377",
-                        },
+                        "&:hover": { bgcolor: "#184377" },
                       }}
                     >
                       {isSubmitting ? "Creating..." : "Create Room"}
@@ -244,7 +288,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         </Box>
       </Box>
     </AdminSidebar>
-  )
-}
+  );
+};
 
-export default AdminRoomsCreate
+export default AdminRoomsCreate;

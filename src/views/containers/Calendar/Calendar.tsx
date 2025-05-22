@@ -77,7 +77,21 @@ const Calendar: React.FC<CalendarProps> = ({
       setInternalCurrentDate(newDate);
     }
   };
+  const [purposeFilter, setPurposeFilter] = useState<string>('');
+  const [timeFilterStart, setTimeFilterStart] = useState<string>('');
+  const [timeFilterEnd, setTimeFilterEnd] = useState<string>('');
 
+  useEffect(()=>{
+    const filteredRooms = rooms.filter(
+      (room) =>
+        (!searchQuery ||
+          room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          room.location.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (!purposeFilter || room.purpose === purposeFilter) &&
+        (!timeFilterStart || !timeFilterEnd || (room.timeStart <= timeFilterStart && room.timeEnd >= timeFilterEnd))
+    );
+
+  }, []);
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -284,6 +298,12 @@ const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
           rooms={filteredRooms}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          purposeFilter={purposeFilter}
+          onPurposeFilterChange={setPurposeFilter}
+          timeFilterStart={timeFilterStart}
+          onTimeFilterStartChange={setTimeFilterStart}
+          timeFilterEnd={timeFilterEnd}
+          onTimeFilterEndChange={setTimeFilterEnd}
         />
 
         <Box

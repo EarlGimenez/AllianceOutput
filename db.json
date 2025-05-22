@@ -1,12 +1,13 @@
 {
   "rooms": [
     {
-      "id": "2",
       "name": "School Classroom",
       "location": "2nd Floor, West Wing",
       "timeStart": "07:00",
       "timeEnd": "17:00",
-      "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
+      "purpose": "Academic",
+      "image": "/uploads/rooms/017f86ee-ca89-490a-baec-0f668c001519.JPG",
+      "id": "2"
     },
     {
       "id": "3",
@@ -14,6 +15,7 @@
       "location": "3rd Floor, North Wing",
       "timeStart": "09:00",
       "timeEnd": "21:00",
+      "purpose": "Meetings",
       "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
     },
     {
@@ -22,6 +24,7 @@
       "location": "Basement Level",
       "timeStart": "10:00",
       "timeEnd": "16:00",
+      "purpose": "Academic",
       "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
     },
     {
@@ -30,74 +33,29 @@
       "location": "Ground Floor",
       "timeStart": "06:00",
       "timeEnd": "22:00",
+      "purpose": "Meetings",
       "image": "https://omo-oss-image.thefastimg.com/portal-saas/new2022071417205406509/cms/image/903d1009-961d-41d9-a07f-2074bf00ec78.jpg"
     },
     {
-      "id": "3421",
-      "name": "Test Room",
-      "location": "1st Floor East Wing",
-      "timeStart": "08:00",
-      "timeEnd": "18:00"
-    },
-    {
-      "id": "db31",
-      "name": "Hellowowrkd",
-      "location": "ako",
-      "timeStart": "08:00",
-      "timeEnd": "18:00"
-    },
-    {
-      "id": "69bd",
+      "id": "9bc4",
       "name": "Test",
-      "location": "Test Room",
+      "location": "Test",
       "timeStart": "08:00",
-      "timeEnd": "18:00"
+      "timeEnd": "18:00",
+      "purpose": "Test",
+      "image": "/uploads/rooms/4f2d6fdf-9aa3-4285-92cb-a409bbf5f28e.JPG"
+    },
+    {
+      "id": "8d56",
+      "name": "Test",
+      "location": "testtest",
+      "timeStart": "08:00",
+      "timeEnd": "18:00",
+      "purpose": "testestest",
+      "image": "/uploads/rooms/330d2249-3898-4cf2-89d1-eb5b7a1884d8.JPG"
     }
   ],
   "users": [
-    {
-      "email": "john.doe@example.com",
-      "username": "johndoe",
-      "fullName": "John Doe test",
-      "company": "Acme Inc.",
-      "id": "1"
-    },
-    {
-      "id": "2",
-      "email": "jane.smith@example.com",
-      "username": "janesmith",
-      "fullName": "Jane Smith",
-      "company": "Globex Corp"
-    },
-    {
-      "id": "3",
-      "email": "michael.johnson@example.com",
-      "username": "michaelj",
-      "fullName": "Michael Johnson",
-      "company": "Acme Inc."
-    },
-    {
-      "id": "4",
-      "email": "sarah.williams@example.com",
-      "username": "sarahw",
-      "fullName": "Sarah Williams",
-      "company": "Initech"
-    },
-    {
-      "id": "5",
-      "email": "robert.brown@example.com",
-      "username": "robbrown",
-      "fullName": "Robert Brown",
-      "company": "Umbrella Corp"
-    },
-    {
-      "id": "1747412561686",
-      "firstName": "teestes",
-      "lastName": "test",
-      "username": "testt3esdts",
-      "email": "test@testestest.com",
-      "password": "testtest"
-    },
     {
       "id": "58ee",
       "firstName": "testte",
@@ -220,6 +178,17 @@
       "description": "",
       "userId": "c584",
       "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250519T155959Z"
+    },
+    {
+      "id": "91f1",
+      "title": "test",
+      "date": "2025-05-22",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "roomId": "3",
+      "description": "",
+      "userId": "c584",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250525T155959Z"
     }
   ]
 }

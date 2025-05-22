@@ -6,6 +6,7 @@ export interface Room {
   location: string;
   timeStart: string;
   timeEnd: string;
+  purpose: string;
   image: string;
 }
 

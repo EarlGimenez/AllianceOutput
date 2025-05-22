@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import { CalendarEvent, Room } from './CalendarEvents';
+import { CalendarEvent } from './CalendarEvents';
+import { Room } from '../services/roomService';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -21,42 +22,57 @@ const MonthView: React.FC<MonthViewProps> = ({
 }) => {
   const dayLabelsShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const getEventsForDate = (date: Date): CalendarEvent[] => {
-    return events.filter(event => {
-      const eventDate = new Date(event.date);
-      const displayDate = new Date(date);
-      
-      if (!event.recurrenceRule) {
-        return eventDate.toDateString() === displayDate.toDateString();
-      }
+const getEventsForDate = (date: Date): CalendarEvent[] => {
+  return events.filter(event => {
+    const eventDate = new Date(event.date + 'T00:00:00');
+    const displayDate = new Date(date);
+    displayDate.setHours(0, 0, 0, 0);
 
-      const rule = event.recurrenceRule;
-      const freqMatch = rule.match(/FREQ=([A-Z]+)/);
-      const freq = freqMatch ? freqMatch[1] : 'DAILY';
-      
-      const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-      const days = byDayMatch ? byDayMatch[1].split(',') : [];
-      
-      const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
-      const untilDate = untilMatch ? new Date(
-        untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
-      ) : null;
+    if (!event.recurrenceRule) {
+      console.log(`[Single] Comparing ${eventDate.toDateString()} with ${displayDate.toDateString()}`);
+      return eventDate.toDateString() === displayDate.toDateString();
+    }
 
-      if (displayDate < eventDate) return false;
-      if (untilDate && displayDate > untilDate) return false;
+    const rule = event.recurrenceRule;
+    const freqMatch = rule.match(/FREQ=([A-Z]+)/);
+    const freq = freqMatch ? freqMatch[1] : 'DAILY';
+    
+    const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+    const days = byDayMatch ? byDayMatch[1].split(',') : [];
+    
+    const untilMatch = rule.match(/UNTIL=([0-9]{8}T[0-9]{6}Z)/);
+    const untilDate = untilMatch ? new Date(
+      untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z')
+    ) : null;
 
-      if (freq === 'DAILY') {
-        return true;
-      } else if (freq === 'WEEKLY') {
-        const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
-        return days.length === 0 || days.includes(currentDay);
-      } else if (freq === 'MONTHLY') {
-        return displayDate.getDate() === eventDate.getDate();
-      }
-
+    if (displayDate < eventDate) {
+      console.log(`[Recurring] ${event.title} - Display date is earlier than event date. Skipping...`);
       return false;
-    });
-  };
+    }
+    if (untilDate && displayDate > untilDate) {
+      console.log(`[Recurring] ${event.title} - Display date is past until date. Skipping...`);
+      return false;
+    }
+
+    if (freq === 'DAILY') {
+      const pass = true;
+      console.log(`[Recurring DAILY] ${event.title} - Pass? ${pass}`);
+      return pass;
+    } else if (freq === 'WEEKLY') {
+      const currentDay = ['SU','MO','TU','WE','TH','FR','SA'][displayDate.getDay()];
+      const pass = days.length === 0 || days.includes(currentDay);
+      console.log(`[Recurring WEEKLY] ${event.title} - Pass? ${pass} (Days: ${days.join(',')} | Current day: ${currentDay})`);
+      return pass;
+    } else if (freq === 'MONTHLY') {
+      const pass = displayDate.getDate() === eventDate.getDate();
+      console.log(`[Recurring MONTHLY] ${event.title} - Pass? ${pass} (Day of month: ${displayDate.getDate()} | Event day: ${eventDate.getDate()})`);
+      return pass;
+    }
+
+    console.log(`[Recurring] Unknown freq "${freq}" for event ${event.title}. Skipping.`);
+    return false;
+  });
+};
 
   const renderMonthView = () => {
     const year = currentDate.getFullYear();

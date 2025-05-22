@@ -1,7 +1,7 @@
-"use client"
+// AdminRoomsEdit.tsx (Updated)
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, ChangeEvent, useRef } from "react";
 import {
   Box,
   Typography,
@@ -12,44 +12,36 @@ import {
   Breadcrumbs,
   Link as MuiLink,
   useTheme,
+  Input,
   CircularProgress,
   Alert,
-} from "@mui/material"
-import { Link, useNavigate, useParams } from "react-router-dom"
-import { AdminSidebar } from "../../../../components/AdminSidebar"
-import { AdminHeader } from "../../../../components/AdminHeader"
-import { PATHS } from "../../../../../constant"
-
-// Import room data from db.json
-import roomsData from "../../../../../../db.json"
-
-interface Room {
-  id: string
-  name: string
-  location: string
-  timeStart: string
-  timeEnd: string
-}
+} from "@mui/material";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AdminSidebar } from "../../../../components/AdminSidebar";
+import { PATHS } from "../../../../../constant";
 
 const AdminRoomsEdit: React.FC = () => {
-  const theme = useTheme()
-  const navigate = useNavigate()
-  const { id } = useParams<{ id: string }>()
-  const [loading, setLoading] = useState(true)
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     location: "",
     timeStart: "",
     timeEnd: "",
-  })
+    purpose: "",
+    image: "",
+  });
   const [errors, setErrors] = useState({
     name: "",
     location: "",
     timeStart: "",
     timeEnd: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -62,103 +54,126 @@ const AdminRoomsEdit: React.FC = () => {
           location: room.location,
           timeStart: room.timeStart,
           timeEnd: room.timeEnd,
+          purpose: room.purpose,
+          image: room.image,
         });
       })
       .catch(() => navigate(PATHS.ADMIN_ROOMS.path))
       .finally(() => setLoading(false));
   }, [id, navigate]);
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-    // Clear error when user types
+    });
     setErrors({
       ...errors,
       [name]: "",
-    })
-  }
+    });
+  };
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+    }
+  };
 
   const validateForm = () => {
-    let valid = true
-    const newErrors = { ...errors }
+    let valid = true;
+    const newErrors = { ...errors };
 
     if (!formData.name.trim()) {
-      newErrors.name = "Room name is required"
-      valid = false
+      newErrors.name = "Room name is required";
+      valid = false;
     }
 
     if (!formData.location.trim()) {
-      newErrors.location = "Location is required"
-      valid = false
+      newErrors.location = "Location is required";
+      valid = false;
     }
 
     if (!formData.timeStart) {
-      newErrors.timeStart = "Start time is required"
-      valid = false
+      newErrors.timeStart = "Start time is required";
+      valid = false;
     }
 
     if (!formData.timeEnd) {
-      newErrors.timeEnd = "End time is required"
-      valid = false
+      newErrors.timeEnd = "End time is required";
+      valid = false;
     }
 
-    // Check if end time is after start time
     if (formData.timeStart && formData.timeEnd && formData.timeStart >= formData.timeEnd) {
-      newErrors.timeEnd = "End time must be after start time"
-      valid = false
+      newErrors.timeEnd = "End time must be after start time";
+      valid = false;
     }
 
-    setErrors(newErrors)
-    return valid
-  }
-
-// … inside AdminRoomsEdit …
-
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-  
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`http://localhost:3001/rooms/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      setSubmitSuccess(true);
-      setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
-    } catch (err) {
-      console.error("Update room failed:", err);
-    } finally {
-      setIsSubmitting(false);
-    }
+    setErrors(newErrors);
+    return valid;
   };
-  
+
+// AdminRoomsEdit.tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validateForm()) return;
+
+  setIsSubmitting(true);
+  let imagePath = formData.image; 
+
+  if (imageFile) {
+    const formDataToSend = new FormData(); 
+    formDataToSend.append('image', imageFile);
+
+    try {
+      const uploadRes = await fetch('http://localhost:3002/api/rooms/upload-image', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+      if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
+      ({ imagePath } = await uploadRes.json());
+    } catch (err) {
+      console.error(err);
+      setIsSubmitting(false);
+      return;
+    }
+  }
+ 
+  const updatedRoom = {
+    ...formData,
+    image: imagePath, 
+  };
+
+  try {
+    const updateRes = await fetch(`http://localhost:3001/rooms/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedRoom),
+    });
+    if (!updateRes.ok) throw new Error(`Update failed: ${updateRes.status}`);
+    setSubmitSuccess(true);
+    setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
   if (loading) {
     return (
       <AdminSidebar>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "100vh",
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
           <CircularProgress />
         </Box>
       </AdminSidebar>
-    )
+    );
   }
 
   return (
     <AdminSidebar>
       <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-
         <Box sx={{ p: 3, flexGrow: 1 }}>
           <Breadcrumbs sx={{ mb: 3 }}>
             <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">
@@ -220,6 +235,24 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <TextField
                     required
                     fullWidth
+                    id="purpose"
+                    name="purpose"
+                    label="Purpose"
+                    value={formData.purpose}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Input type="file" inputProps={{ accept: "image/*" }} onChange={handleImageChange} />
+                  {formData.image && <img src={formData.image} alt="Preview" style={{ maxWidth: 100, maxHeight: 100 }} />}
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    required
+                    fullWidth
                     id="timeStart"
                     name="timeStart"
                     label="Available From"
@@ -228,9 +261,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={handleChange}
                     error={!!errors.timeStart}
                     helperText={errors.timeStart}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     disabled={isSubmitting}
                   />
                 </Grid>
@@ -247,9 +278,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={handleChange}
                     error={!!errors.timeEnd}
                     helperText={errors.timeEnd}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
+                    InputLabelProps={{ shrink: true }}
                     disabled={isSubmitting}
                   />
                 </Grid>
@@ -263,9 +292,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       sx={{
                         color: "#1e5393",
                         borderColor: "#1e5393",
-                        "&:hover": {
-                          borderColor: "#184377",
-                        },
+                        "&:hover": { borderColor: "#184377" },
                       }}
                       disabled={isSubmitting}
                     >
@@ -277,9 +304,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       disabled={isSubmitting}
                       sx={{
                         bgcolor: "#1e5393",
-                        "&:hover": {
-                          bgcolor: "#184377",
-                        },
+                        "&:hover": { bgcolor: "#184377" },
                       }}
                     >
                       {isSubmitting ? "Updating..." : "Update Room"}
@@ -292,7 +317,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         </Box>
       </Box>
     </AdminSidebar>
-  )
-}
+  );
+};
 
-export default AdminRoomsEdit
+export default AdminRoomsEdit;

@@ -132,12 +132,30 @@ const handleEditUser = (id: string) => {
                     <TableCell>{user.fullName}</TableCell>
                     <TableCell>{user.company}</TableCell>
                     <TableCell align="right">
-                      <IconButton onClick={() => handleEditUser(user.id)} sx={{ color: "#1e5393" }}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={() => handleDeleteClick(user)} sx={{ color: "#f44336" }}>
-                        <DeleteIcon />
-                      </IconButton>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <IconButton onClick={() => handleEditUser(user.id)} sx={{ color: "#1e5393" }}>
+                          <EditIcon />
+                        </IconButton>
+                        <Typography
+                          variant="body2"
+                          onClick={() => handleEditUser(user.id)}
+                          sx={{ cursor: "pointer", color: "#1e5393" }}
+                        >
+                          Edit
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <IconButton onClick={() => handleDeleteClick(user)} sx={{ color: "#f44336" }}>
+                          <DeleteIcon />
+                        </IconButton>
+                        <Typography
+                          variant="body2"
+                          onClick={() => handleDeleteClick(user)}
+                          sx={{ cursor: "pointer", color: "#f44336" }}
+                        >
+                          Delete
+                        </Typography>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}

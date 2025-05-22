@@ -14,8 +14,9 @@ import {
   FormGroup,
   FormHelperText,
 } from '@mui/material';
-import { CalendarEvent, Room } from './CalendarEvents';
+import { CalendarEvent } from './CalendarEvents';
 import { checkBookingConflict } from '../services/bookingService';
+import { Room } from '../services/roomService';
 
 interface BookingFormProps {
   rooms: Room[];

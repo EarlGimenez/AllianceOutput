@@ -1,8 +1,28 @@
+// CalendarSidebar.tsx
 import React, { useState } from 'react';
-import { Box, Drawer, Typography, Paper, InputBase, IconButton, Grid, Card, CardMedia, CardContent, Dialog, DialogTitle, DialogContent } from '@mui/material';
+import {
+  Box,
+  Drawer,
+  Typography,
+  Paper,
+  InputBase,
+  IconButton,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  TextField
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import BookingForm from './BookingForm';
-import { Room } from './CalendarEvents';
+import { Room } from '../services/roomService';
 
 interface CalendarSidebarProps {
   open: boolean;
@@ -10,15 +30,26 @@ interface CalendarSidebarProps {
   rooms: Room[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  purposeFilter: string;
+  onPurposeFilterChange: (purpose: string) => void;
+  timeFilterStart: string;
+  onTimeFilterStartChange: (time: string) => void;
+  timeFilterEnd: string;
+  onTimeFilterEndChange: (time: string) => void;
 }
 
-// CalendarSidebar.tsx
 const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   open,
   onToggle,
   rooms,
   searchQuery,
   onSearchChange,
+  purposeFilter,
+  onPurposeFilterChange,
+  timeFilterStart,
+  onTimeFilterStartChange,
+  timeFilterEnd,
+  onTimeFilterEndChange,
 }) => {
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -72,7 +103,47 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
             <SearchIcon />
           </IconButton>
         </Paper>
+
+        {/* Purpose filter */}
+        <FormControl fullWidth sx={{ mt: 2 }}>
+          <InputLabel id="purpose-filter-label">Filter by Purpose</InputLabel>
+          <Select
+            value={purposeFilter}
+            labelId="purpose-filter-label"
+            label="Filter by Purpose"
+            size="small"
+            onChange={(e) => onPurposeFilterChange(e.target.value as string)}
+          >
+            <MenuItem value="">All Purposes</MenuItem>
+            <MenuItem value="Meetings">Meetings</MenuItem>
+            <MenuItem value="Lectures">Lectures</MenuItem>
+            <MenuItem value="Presentations">Presentations</MenuItem>
+          </Select>
+        </FormControl>
+
+        {/* Time filter */}
+        <Box sx={{ mt: 2, display: 'flex' }}>
+          <TextField
+            type="time"
+            label="Start Time"
+            value={timeFilterStart}
+            onChange={(e) => onTimeFilterStartChange(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+            sx={{ mr: 1 }}
+          />
+          <TextField
+            type="time"
+            label="End Time"
+            value={timeFilterEnd}
+            onChange={(e) => onTimeFilterEndChange(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+        </Box>
       </Box>
+
+      {/* Rest of the component remains the same */}
       <Box
         sx={{
           flex: 1,
@@ -89,9 +160,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                   sx={{
                     display: 'flex',
                     cursor: 'pointer',
-                    '&:hover': {
-                      boxShadow: 3,
-                    },
+                    '&:hover': { boxShadow: 3 },
                   }}
                   onClick={() => handleRoomClick(room)}
                 >
@@ -122,6 +191,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
           </Typography>
         )}
       </Box>
+
       <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>Create Booking</DialogTitle>
         <DialogContent>
@@ -136,6 +206,5 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     </Drawer>
   );
 };
-
 
 export default CalendarSidebar;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Paper, Typography, Pagination } from '@mui/material';
-import { CalendarEvent, Room } from './CalendarEvents';
+import { CalendarEvent } from './CalendarEvents';
+import { Room } from '../services/roomService';
 
 interface DayViewProps {
   currentDate: Date;
