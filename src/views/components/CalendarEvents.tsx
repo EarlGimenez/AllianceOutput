@@ -5,7 +5,7 @@ export interface CalendarEvent {
   date: string;
   startTime: string;
   endTime: string;
-  roomId: string; // Changed from room to roomId for consistency
+  roomId: string;
   description?: string;
   recurrenceRule?: string;
   userId: string;

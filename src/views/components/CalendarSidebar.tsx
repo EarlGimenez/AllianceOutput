@@ -1,5 +1,4 @@
-// CalendarSidebar.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -52,7 +51,38 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   onTimeFilterEndChange,
 }) => {
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
+  const [filteredRooms, setFilteredRooms] = useState<Room[]>(rooms);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+
+  // Update filtered rooms when filters or rooms change
+  useEffect(() => {
+    const filtered = rooms.filter(room => {
+      // Search filter
+      const matchesSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          room.location.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Purpose filter
+      const matchesPurpose = !purposeFilter || room.purpose === purposeFilter;
+      
+      // Time filter (convert to minutes for comparison)
+      const toMinutes = (time: string) => {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+      
+      const roomStart = toMinutes(room.timeStart);
+      const roomEnd = toMinutes(room.timeEnd);
+      const filterStart = toMinutes(timeFilterStart || '00:00');
+      const filterEnd = toMinutes(timeFilterEnd || '23:59');
+      
+      const matchesTime = (!timeFilterStart || roomEnd > filterStart) && 
+                         (!timeFilterEnd || roomStart < filterEnd);
+      
+      return matchesSearch && matchesPurpose && matchesTime;
+    });
+    
+    setFilteredRooms(filtered);
+  }, [rooms, searchQuery, purposeFilter, timeFilterStart, timeFilterEnd]);
 
   const handleRoomClick = (room: Room) => {
     setSelectedRoom(room);
@@ -63,6 +93,9 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     setIsBookingFormOpen(false);
     setSelectedRoom(null);
   };
+
+  // Extract unique purposes from rooms
+  const uniquePurposes = Array.from(new Set(rooms.map(room => room.purpose)));
 
   return (
     <Drawer
@@ -85,76 +118,69 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
         <Typography variant="h6" sx={{ mb: 2 }}>
           Available Rooms
         </Typography>
-        <Paper
-          component="form"
+        
+        {/* Search Input */}
+        <InputBase
+          fullWidth
+          placeholder="Search rooms..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          startAdornment={
+            <IconButton>
+              <SearchIcon />
+            </IconButton>
+          }
           sx={{
-            p: '2px 4px',
-            display: 'flex',
-            alignItems: 'center',
+            pl: 1,
+            mb: 2,
+            border: '1px solid #ddd',
+            borderRadius: 1,
           }}
-        >
-          <InputBase
-            sx={{ ml: 1, flex: 1 }}
-            placeholder="Search rooms..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-          <IconButton type="submit" sx={{ p: '10px' }} aria-label="search">
-            <SearchIcon />
-          </IconButton>
-        </Paper>
+        />
 
-        {/* Purpose filter */}
-        <FormControl fullWidth sx={{ mt: 2 }}>
-          <InputLabel id="purpose-filter-label">Filter by Purpose</InputLabel>
+        {/* Purpose Filter */}
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Filter by Purpose</InputLabel>
           <Select
             value={purposeFilter}
-            labelId="purpose-filter-label"
             label="Filter by Purpose"
-            size="small"
             onChange={(e) => onPurposeFilterChange(e.target.value as string)}
           >
             <MenuItem value="">All Purposes</MenuItem>
-            <MenuItem value="Meetings">Meetings</MenuItem>
-            <MenuItem value="Lectures">Lectures</MenuItem>
-            <MenuItem value="Presentations">Presentations</MenuItem>
+            {uniquePurposes.map((purpose) => (
+              <MenuItem key={purpose} value={purpose}>
+                {purpose}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
 
-        {/* Time filter */}
-        <Box sx={{ mt: 2, display: 'flex' }}>
+        {/* Time Filter */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <TextField
+            fullWidth
             type="time"
             label="Start Time"
             value={timeFilterStart}
             onChange={(e) => onTimeFilterStartChange(e.target.value)}
             InputLabelProps={{ shrink: true }}
-            size="small"
-            sx={{ mr: 1 }}
           />
           <TextField
+            fullWidth
             type="time"
             label="End Time"
             value={timeFilterEnd}
             onChange={(e) => onTimeFilterEndChange(e.target.value)}
             InputLabelProps={{ shrink: true }}
-            size="small"
           />
         </Box>
       </Box>
 
-      {/* Rest of the component remains the same */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          p: 2,
-          pr: 3,
-        }}
-      >
-        {rooms.length > 0 ? (
+      {/* Filtered Rooms List */}
+      <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+        {filteredRooms.length > 0 ? (
           <Grid container spacing={2}>
-            {rooms.map((room) => (
+            {filteredRooms.map((room) => (
               <Grid item xs={12} key={room.id}>
                 <Card
                   sx={{
@@ -180,6 +206,11 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                     <Typography variant="body2" sx={{ mt: 1 }}>
                       Available: {room.timeStart} - {room.timeEnd}
                     </Typography>
+                    {room.purpose && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Purpose: {room.purpose}
+                      </Typography>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
@@ -192,6 +223,7 @@ const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
         )}
       </Box>
 
+      {/* Booking Dialog */}
       <Dialog open={isBookingFormOpen} onClose={handleCloseBookingForm} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ pb: 1 }}>Create Booking</DialogTitle>
         <DialogContent>

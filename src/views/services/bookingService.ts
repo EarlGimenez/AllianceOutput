@@ -1,4 +1,5 @@
-import { CalendarEvent, Room } from "../components/CalendarEvents";
+import { CalendarEvent } from "../components/CalendarEvents";
+import { Room } from "./roomService"
 
 const API_URL = 'http://localhost:3001/bookings';
 
@@ -62,7 +63,8 @@ export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise
       body: JSON.stringify({
         ...booking,
         date: formatDate(booking.date),
-        userId: localStorage.getItem('userId') || ''
+        userId: localStorage.getItem('userId') || '',
+         roomId: booking.roomId
       })
     });
 
@@ -96,7 +98,8 @@ export const updateBooking = async (id: string, booking: Partial<CalendarEvent>)
       body: JSON.stringify({
         ...existingBooking,
         ...booking,
-        date: booking.date ? formatDate(booking.date) : existingBooking.date
+        date: booking.date ? formatDate(booking.date) : existingBooking.date,
+        roomId: booking.roomId || existingBooking.roomId
       })
     });
 

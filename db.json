@@ -6,7 +6,7 @@
       "timeStart": "07:00",
       "timeEnd": "17:00",
       "purpose": "Academic",
-      "image": "/uploads/rooms/017f86ee-ca89-490a-baec-0f668c001519.JPG",
+      "image": "/uploads/rooms/538ed0a0-9ec4-49f8-bad5-14930dc120c5.png",
       "id": "2"
     },
     {
@@ -127,68 +127,64 @@
   ],
   "bookings": [
     {
-      "id": "3289",
+      "id": "d6e0",
       "title": "Test",
-      "date": "2025-05-14",
+      "date": "2025-05-22",
       "startTime": "09:00",
       "endTime": "10:00",
-      "room": "Conference Room A",
       "roomId": "2",
       "description": "",
-      "userId": "1747204166579"
+      "userId": "c584",
+      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250527T155959Z"
     },
     {
-      "id": "5eec",
-      "title": "Test 2",
-      "date": "2025-05-14",
+      "id": "0241",
+      "title": "test",
+      "date": "2025-05-22",
       "startTime": "09:00",
       "endTime": "10:00",
-      "roomId": null,
       "description": "",
-      "userId": "1747204166579"
+      "userId": "c584"
     },
     {
-      "id": "5ffd",
+      "id": "4ea0",
       "title": "Test",
-      "date": "2025-05-14",
+      "date": "2025-05-29",
       "startTime": "10:00",
       "endTime": "11:00",
-      "roomId": null,
+      "roomId": "4",
       "description": "",
-      "userId": "1747204166579"
+      "userId": "c584"
     },
     {
-      "id": "d7fe",
-      "title": "Test Booking",
-      "date": "2025-05-17",
-      "startTime": "11:00",
-      "endTime": "12:00",
-      "roomId": null,
-      "description": "Test Description",
-      "userId": "8a98",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250520T155959Z"
-    },
-    {
-      "id": "5cd2",
-      "title": "Test",
-      "date": "2025-05-17",
-      "startTime": "10:00",
-      "endTime": "11:00",
-      "roomId": null,
-      "description": "",
-      "userId": "c584",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250519T155959Z"
-    },
-    {
-      "id": "91f1",
+      "id": "cdd1",
       "title": "test",
+      "date": "2025-05-24",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "roomId": "3",
+      "description": "",
+      "userId": "c584"
+    },
+    {
+      "id": "3db9",
+      "title": "tets",
       "date": "2025-05-22",
       "startTime": "09:00",
       "endTime": "10:00",
       "roomId": "3",
       "description": "",
-      "userId": "c584",
-      "recurrenceRule": "RRULE:FREQ=DAILY;UNTIL=20250525T155959Z"
+      "userId": "c584"
+    },
+    {
+      "id": "52e8",
+      "title": "Test",
+      "date": "2025-05-28",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "roomId": "3",
+      "description": "",
+      "userId": "c584"
     }
   ]
 }
