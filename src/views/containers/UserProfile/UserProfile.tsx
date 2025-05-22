@@ -52,6 +52,7 @@ import BookingForm from "../../components/BookingForm"
 import { createBooking, updateBooking, deleteBooking } from "../../services/bookingService"
 import { CalendarEvent, Room } from '../../components/CalendarEvents';
 
+
 interface Booking {
   id: string
   room: string
@@ -116,6 +117,9 @@ export const UserProfile: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const navigate = useNavigate()
+   const username = localStorage.getItem('user.name') || 'John Doe';
+  const email = localStorage.getItem('user.email') || 'john.doe@example.com';
+  const avatarInitial = username.charAt(0).toUpperCase();
 
    const rooms: Room[] = [
       'Meeting Room',
@@ -406,17 +410,17 @@ export const UserProfile: React.FC = () => {
             display: { xs: "none", md: "block" },
           }}
         >
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 3 }}>
-            <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: "#ccc" }} alt="John Doe">
-              J
-            </Avatar>
-            <Typography variant="h5" component="h2" gutterBottom>
-              John Doe
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              john.doe@example.com
-            </Typography>
-          </Box>
+           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+      <Avatar sx={{ width: 120, height: 120, mb: 2, bgcolor: '#ccc' }} alt={username}>
+        {avatarInitial}
+      </Avatar>
+      <Typography variant="h5" component="h2" gutterBottom>
+        {username}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {email}
+      </Typography>
+    </Box>
 
           <Typography variant="h6" component="h3" gutterBottom>
             Upcoming Bookings

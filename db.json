@@ -157,6 +157,14 @@
       "username": "TESTESTTEST",
       "email": "TEST@TESTESTESTET.COM",
       "password": "$2b$10$My6iZhOZHXtCxv/vffr6UevzUXwveDwD5N0XM6p7p4eZyYl4hsbzG"
+    },
+    {
+      "id": "db52",
+      "firstName": "hello",
+      "lastName": "world",
+      "username": "hellotest",
+      "email": "hello@world.com",
+      "password": "$2b$10$SEnirFQFncImxs1rovafgObdMcrclD/FwafTOj12iD/HEXfee4f96"
     }
   ],
   "bookings": [
