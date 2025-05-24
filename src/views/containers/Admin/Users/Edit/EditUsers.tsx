@@ -50,29 +50,32 @@ const AdminUsersEdit: React.FC = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-// EditUsers.tsx (continued from part 1)
 
 useEffect(() => {
   if (id) {
-    setLoading(true);
+    setLoading(true); 
     fetch(`http://localhost:3001/users/${id}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("User not found");
-          }
-          return res.json();
-        })
-        .then((user: User) => {
-          setFormData(user);
-          setInitialPassword(user.password);
-        })
-        .catch((err) => {
-          console.error(err);
-          setError(err.message);
-          setLoading(false);
-        });
-    }
-  }, [id]);
+        }
+        return res.json();
+      })
+      .then((user: User) => {
+        setFormData(user); 
+        setInitialPassword(user.password); 
+      })
+      .catch((err) => {
+        console.error(err);
+        setError(err.message);
+      })
+      .finally(() => {
+        setLoading(false); 
+      });
+  } else {
+    setLoading(false); 
+  }
+}, [id]);
 
   const validateForm = useCallback((): boolean => {
     let isValid = true;
@@ -172,30 +175,25 @@ useEffect(() => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  return (
-    <AdminSidebar>
-      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-        <Box sx={{ p: 3, flexGrow: 1 }}>
-          <Breadcrumbs sx={{ mb: 3 }}>
-            <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">
-              Dashboard
-            </MuiLink>
-            <MuiLink component={Link} to={PATHS.ADMIN_USERS.path} color="inherit">
-              Users
-            </MuiLink>
-            <Typography color="text.primary">Edit User</Typography>
-          </Breadcrumbs>
+return (
+  <AdminSidebar>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
+      <Box sx={{ p: 3, flexGrow: 1 }}>
+        <Breadcrumbs sx={{ mb: 3 }}>
+          <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">Dashboard</MuiLink>
+          <MuiLink component={Link} to={PATHS.ADMIN_USERS.path} color="inherit">Users</MuiLink>
+          <Typography color="text.primary">Edit User</Typography>
+        </Breadcrumbs>
 
-          {submitSuccess && (
-            <Alert severity="success" sx={{ mb: 3 }}>
-              User updated successfully! Redirecting...
-            </Alert>
-          )}
-          {error && <Alert severity="error">{error}</Alert>}
+        {submitSuccess && (
+          <Alert severity="success" sx={{ mb: 3 }}>User updated successfully! Redirecting...</Alert>
+        )}
+        {error && <Alert severity="error">{error}</Alert>}
 
-          {formData ? (
-            <Paper sx={{ p: 3 }}>
-              <form onSubmit={handleSubmit}>
+        {formData ? (
+          <Paper sx={{ p: 3 }}>
+            <form onSubmit={handleSubmit}>
+
                 <Grid container spacing={3}>
                   <Grid item xs={12}>
                     <Typography variant="h6" gutterBottom>
@@ -312,8 +310,10 @@ useEffect(() => {
                 </Grid>
               </form>
             </Paper>
+          ) : loading ? (
+            <CircularProgress /> // Only show the spinner when loading
           ) : (
-            <CircularProgress />
+            <Alert severity="warning">No user data available.</Alert>
           )}
         </Box>
       </Box>

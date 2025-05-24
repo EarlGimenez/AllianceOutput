@@ -33,7 +33,9 @@ interface User {
   id: string
   email: string
   username: string
-  fullName: string
+  firstName:string
+  lastName: string
+  fullName: string 
   company: string
 }
 
@@ -47,21 +49,24 @@ export const AdminUsers: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
 
-  // load users
-  useEffect(() => {
-    fetch("http://localhost:3001/users")
-      .then(async res => {
-        if (!res.ok) throw new Error(`Failed to load (${res.status})`)
-        return res.json()
-      })
-      .then((data: User[]) => {
-        // Ensure all `id`s are strings
-        const usersWithStringIds = data.map(user => ({ ...user, id: String(user.id) }))
-        setUsers(usersWithStringIds)
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
+useEffect(() => {
+  fetch("http://localhost:3001/users")
+    .then(async res => {
+      if (!res.ok) throw new Error(`Failed to load (${res.status})`);
+      return res.json();
+    })
+    .then((data: User[]) => {
+      const usersWithStringIds = data.map(user => ({
+        ...user,
+        id: String(user.id),
+        fullName: `${user.firstName} ${user.lastName}`
+      }));
+      setUsers(usersWithStringIds);
+    })
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false));
+}, []);
+
 
 const handleEditUser = (id: string) => {
   console.log(`id: ${id}, path: ${PATHS.ADMIN_USERS_EDIT.path.replace(":id", id)}`);
@@ -123,43 +128,35 @@ const handleEditUser = (id: string) => {
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
-              <TableBody>
-                {users.map(user => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.id}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>{user.fullName}</TableCell>
-                    <TableCell>{user.company}</TableCell>
-                    <TableCell align="right">
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <IconButton onClick={() => handleEditUser(user.id)} sx={{ color: "#1e5393" }}>
-                          <EditIcon />
-                        </IconButton>
-                        <Typography
-                          variant="body2"
-                          onClick={() => handleEditUser(user.id)}
-                          sx={{ cursor: "pointer", color: "#1e5393" }}
-                        >
-                          Edit
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <IconButton onClick={() => handleDeleteClick(user)} sx={{ color: "#f44336" }}>
-                          <DeleteIcon />
-                        </IconButton>
-                        <Typography
-                          variant="body2"
-                          onClick={() => handleDeleteClick(user)}
-                          sx={{ cursor: "pointer", color: "#f44336" }}
-                        >
-                          Delete
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+                <TableBody>
+                  {users.map(user => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.id}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.username}</TableCell>
+                       <TableCell>{user.fullName}</TableCell>
+                      <TableCell>{user.company}</TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <IconButton onClick={() => handleEditUser(user.id)} sx={{ color: "#1e5393" }}>
+                            <EditIcon />
+                          </IconButton>
+                          <Typography variant="body2" onClick={() => handleEditUser(user.id)} sx={{ cursor: "pointer", color: "#1e5393" }}>
+                            Edit
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <IconButton onClick={() => handleDeleteClick(user)} sx={{ color: "#f44336" }}>
+                            <DeleteIcon />
+                          </IconButton>
+                          <Typography variant="body2" onClick={() => handleDeleteClick(user)} sx={{ cursor: "pointer", color: "#f44336" }}>
+                            Delete
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
             </Table>
           </TableContainer>
         </Paper>
@@ -170,7 +167,7 @@ const handleEditUser = (id: string) => {
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete “{userToDelete?.fullName}”? This cannot be undone.
+            Are you sure you want to delete “{userToDelete?.username}”? This cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

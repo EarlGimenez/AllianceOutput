@@ -27,7 +27,7 @@ interface FormData {
   lastName: string;
   company: string;
   password: string;
-  confirmPassword?: string; // Make confirmPassword optional
+  confirmPassword?: string; 
 }
 
 const AdminUsersCreate: React.FC = () => {

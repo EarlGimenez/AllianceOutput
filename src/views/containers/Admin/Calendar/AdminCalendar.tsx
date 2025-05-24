@@ -27,9 +27,10 @@ import ChevronRight from "@mui/icons-material/ChevronRight"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import { AdminSidebar } from "../../../components/AdminSidebar"
 import BookingForm from "../../../components/BookingForm"
-import { CalendarEvent, Room } from "../../../components/CalendarEvents"
+import { CalendarEvent } from "../../../components/CalendarEvents"
 import { getBookings, createBooking, updateBooking, deleteBooking } from "../../../services/bookingService"
 import { getRooms } from "../../../services/roomService"
+import { Room } from "../../../services/roomService"
 
 type DayCell =
   | { type: "dayName"; value: string }
@@ -73,7 +74,6 @@ const AdminCalendar: React.FC = () => {
   }, [currentDate])
 
   useEffect(() => {
-    // Reset to first page when rooms change
     setCurrentPage(0)
     setTotalPages(Math.ceil(rooms.length / ROOMS_PER_PAGE))
   }, [rooms])

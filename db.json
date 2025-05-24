@@ -6,7 +6,7 @@
       "timeStart": "07:00",
       "timeEnd": "17:00",
       "purpose": "Academic",
-      "image": "/uploads/rooms/538ed0a0-9ec4-49f8-bad5-14930dc120c5.png",
+      "image": "/uploads/rooms/c9df5e29-8566-48bf-ad58-48044766b7fe.jpg",
       "id": "2"
     },
     {
@@ -63,7 +63,7 @@
       "username": "testteqt",
       "email": "test@testestetetest.com",
       "password": "$2b$10$9ah1uZHQd/7lidT.3klbYOLfKkFBbGihzoi388llP0hZJFG0AvHLW",
-      "confirmPassword": "testtest"
+      "company": "testtestttt"
     },
     {
       "id": "c584",
@@ -71,8 +71,7 @@
       "lastName": "test",
       "username": "testtestetst",
       "email": "test@test.com",
-      "password": "$2b$10$RVbR3p35ZjjwnD48mAr9xO1/AKBluNZRAexspuKkaq29X59slMnZa",
-      "confirmPassword": "testtest"
+      "password": "$2b$10$RVbR3p35ZjjwnD48mAr9xO1/AKBluNZRAexspuKkaq29X59slMnZa"
     },
     {
       "id": "cea0",
@@ -80,8 +79,7 @@
       "lastName": "test",
       "username": "testtesttest",
       "email": "testtest@test.com",
-      "password": "$2b$10$vxdgk3BP9mdbpBfPQ9u9ROY66unZ9JkZ4hGaRRRQV2qjCR1anJjIC",
-      "confirmPassword": "testtest"
+      "password": "$2b$10$vxdgk3BP9mdbpBfPQ9u9ROY66unZ9JkZ4hGaRRRQV2qjCR1anJjIC"
     },
     {
       "id": "8a8d",
@@ -123,6 +121,31 @@
       "username": "hellotest",
       "email": "hello@world.com",
       "password": "$2b$10$SEnirFQFncImxs1rovafgObdMcrclD/FwafTOj12iD/HEXfee4f96"
+    },
+    {
+      "id": "9bd1",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "username": "FirstLast",
+      "email": "first@last.com",
+      "password": "$2b$10$NHyh44gJfm/3V/sbxsoif.oOUlcMUEGnX/oiUiS7/W0w2lfSD6cAW"
+    },
+    {
+      "id": "1216",
+      "firstName": "Last",
+      "lastName": "First",
+      "username": "LastFirst",
+      "email": "last@first.com",
+      "password": "$2b$10$ZDv6vcw5035EdKm.gDPK3.x/d6ZfjVTqQiGktIa8QAYtAS03yZVde"
+    },
+    {
+      "id": "9859",
+      "email": "test@testtt.com",
+      "username": "testestestest",
+      "firstName": "test",
+      "lastName": "test",
+      "company": "testttt",
+      "password": "$2b$10$0paLNrFUQAnJu9HJacDVVektL4kCkSqV637kA3n2JnRFYPmuDB..G"
     }
   ],
   "bookings": [
