@@ -1,3 +1,4 @@
+// c:\Users\Joshua Enad\Documents\Alliance\AllianceOutput\src\views\components\BookingForm.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -101,10 +102,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
     initialData?.roomId || (rooms.length > 0 ? rooms[0].id : '')
   );
   const [description, setDescription] = useState(initialData?.description || '');
-  const [isRecurring, setIsRecurring] = useState(!!initialData?.recurrenceRule);
+  
+  // State for new recurrence fields
+  const [isRecurring, setIsRecurring] = useState(!!initialData?.recurrenceType || !!initialData?.recurrenceRule);
   const [recurrenceType, setRecurrenceType] = useState<'none' | 'daily' | 'weekly' | 'monthly'>('none');
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   const [weeklyDays, setWeeklyDays] = useState<string[]>([]);
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const isAdmin = localStorage.getItem("adminAuthenticated") === "true";
@@ -132,34 +136,40 @@ const BookingForm: React.FC<BookingFormProps> = ({
     setDescription(initialData?.description || '');
     setErrors({});
 
-    if (initialData?.recurrenceRule) {
-      setIsRecurring(true);
-      const rule = initialData.recurrenceRule;
-      if (rule.includes('FREQ=DAILY')) setRecurrenceType('daily');
-      else if (rule.includes('FREQ=WEEKLY')) {
-        setRecurrenceType('weekly');
-        const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
-        if (byDayMatch && byDayMatch[1]) {
-          setWeeklyDays(byDayMatch[1].split(','));
-        } else {
-          setWeeklyDays([]);
-        }
-      } else if (rule.includes('FREQ=MONTHLY')) setRecurrenceType('monthly');
-      else setRecurrenceType('none');
+    // Logic to handle both new and old recurrence data formats
+    const hasNewRecurrence = !!initialData?.recurrenceType;
+    const hasOldRecurrence = !!initialData?.recurrenceRule;
 
-      const untilMatch = rule.match(/UNTIL=([0-9T]+Z)/);
-      if (untilMatch && untilMatch[1]) {
-        const untilDateString = untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z');
-        const untilDate = new Date(untilDateString);
-        setRecurrenceEndDate(formatDateForInput(untilDate));
-      } else {
-        setRecurrenceEndDate('');
-      }
+    if (hasNewRecurrence) {
+        setIsRecurring(true);
+        setRecurrenceType(initialData.recurrenceType || 'none');
+        setRecurrenceEndDate(initialData.recurrenceUntil ? formatDateForInput(initialData.recurrenceUntil) : '');
+        setWeeklyDays(initialData.recurrenceByDay?.split(',').filter(Boolean) || []);
+    } else if (hasOldRecurrence) {
+        // Parse old recurrenceRule to populate the state
+        setIsRecurring(true);
+        const rule = initialData.recurrenceRule!;
+        if (rule.includes('FREQ=DAILY')) setRecurrenceType('daily');
+        else if (rule.includes('FREQ=WEEKLY')) setRecurrenceType('weekly');
+        else if (rule.includes('FREQ=MONTHLY')) setRecurrenceType('monthly');
+        else setRecurrenceType('none');
+
+        const byDayMatch = rule.match(/BYDAY=([A-Z,]+)/);
+        setWeeklyDays(byDayMatch ? byDayMatch[1].split(',') : []);
+
+        const untilMatch = rule.match(/UNTIL=([0-9T]+Z)/);
+        if (untilMatch && untilMatch[1]) {
+            const untilDateString = untilMatch[1].replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/, '$1-$2-$3T$4:$5:$6Z');
+            const untilDate = new Date(untilDateString);
+            setRecurrenceEndDate(formatDateForInput(untilDate));
+        } else {
+            setRecurrenceEndDate('');
+        }
     } else {
-      setIsRecurring(false);
-      setRecurrenceType('none');
-      setRecurrenceEndDate('');
-      setWeeklyDays([]);
+        setIsRecurring(false);
+        setRecurrenceType('none');
+        setRecurrenceEndDate('');
+        setWeeklyDays([]);
     }
   }, [initialData, rooms]);
 
@@ -214,20 +224,25 @@ const BookingForm: React.FC<BookingFormProps> = ({
     const bookingDate = date || formatDateForInput(currentDate) || '';
     
     try {
-      const recurrenceRule = isRecurring && recurrenceType !== 'none' ? generateRecurrenceRule() : undefined;
-      
       const selectedRoom = rooms.find(r => r.id === selectedRoomId);
       if (!selectedRoom) {
         setErrors(prev => ({...prev, room: 'Please select a valid room'}));
         return;
       }
 
+      // Generate a temporary recurrenceRule string for conflict checking to avoid changing the service.
+      const tempRecurrenceRuleForCheck = isRecurring && recurrenceType !== 'none' 
+        ? `RRULE:FREQ=${recurrenceType.toUpperCase()}` +
+          (recurrenceType === 'weekly' && weeklyDays.length > 0 ? `;BYDAY=${weeklyDays.join(',')}` : '') +
+          (recurrenceEndDate ? `;UNTIL=${new Date(recurrenceEndDate).toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z` : '')
+        : undefined;
+
       const { hasConflict, conflictingEvents } = await checkBookingConflict(
         selectedRoom,
         bookingDate,
         startTime,
         endTime,
-        recurrenceRule,
+        tempRecurrenceRuleForCheck,
         initialData?.id
       );
 
@@ -240,7 +255,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         } else {
           const conflictMessage = `Conflict with existing booking(s):\n${
             conflictingEvents.map(e => 
-              `${e.title} (${e.date} ${e.startTime}-${e.endTime}${e.recurrenceRule ? ' (Recurring)' : ''})`
+              `${e.title} (${e.date} ${e.startTime}-${e.endTime}${e.recurrenceRule || e.recurrenceType ? ' (Recurring)' : ''})`
             ).join('\n')
           }`;
           alert(conflictMessage);
@@ -257,7 +272,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
         roomId: selectedRoomId,
         description,
         userId,
-        recurrenceRule
+        // Set new recurrence fields for submission
+        recurrenceType: isRecurring && recurrenceType !== 'none' ? recurrenceType : undefined,
+        recurrenceByDay: isRecurring && recurrenceType === 'weekly' && weeklyDays.length > 0 ? weeklyDays.join(',') : undefined,
+        recurrenceUntil: isRecurring && recurrenceType !== 'none' && recurrenceEndDate ? recurrenceEndDate : undefined,
+        recurrenceRule: undefined // Ensure old rule is cleared
       };
 
       onSubmit(bookingData);
@@ -265,26 +284,6 @@ const BookingForm: React.FC<BookingFormProps> = ({
       console.error('Error checking booking conflicts:', error);
       alert('Error checking for booking conflicts. Please try again.');
     }
-  };
-
-  const generateRecurrenceRule = (): string => {
-    let rrule = `RRULE:FREQ=${recurrenceType.toUpperCase()}`;
-    
-    if (recurrenceType === 'weekly' && weeklyDays.length > 0) {
-      rrule += `;BYDAY=${weeklyDays.join(',')}`;
-    }
-
-    if (recurrenceEndDate) {
-      const endDate = new Date(recurrenceEndDate);
-      endDate.setHours(23, 59, 59);
-      rrule += `;UNTIL=${endDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
-    } else {
-      const defaultEndDate = new Date(date || currentDate || new Date());
-      defaultEndDate.setMonth(defaultEndDate.getMonth() + 1);
-      rrule += `;UNTIL=${defaultEndDate.toISOString().replace(/[-:.]/g, '').slice(0, 15)}Z`;
-    }
-    
-    return rrule;
   };
 
   const handleIsRecurringChange = (checked: boolean) => {
@@ -311,7 +310,8 @@ const BookingForm: React.FC<BookingFormProps> = ({
     } else {
       setIsRecurring(true);
       if (newType === 'weekly' && weeklyDays.length === 0) {
-        const defaultDay = ['MO','TU','WE','TH','FR'][new Date(date || currentDate || new Date()).getDay() - 1] || 'MO';
+        const dayIndex = new Date(date || currentDate || new Date()).getDay();
+        const defaultDay = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][dayIndex];
         setWeeklyDays([defaultDay]);
       }
     }
@@ -325,13 +325,13 @@ const BookingForm: React.FC<BookingFormProps> = ({
   };
 
   const dayOptions = [
-    { value: 'MO', label: 'Monday' },
-    { value: 'TU', label: 'Tuesday' },
-    { value: 'WE', label: 'Wednesday' },
-    { value: 'TH', label: 'Thursday' },
-    { value: 'FR', label: 'Friday' },
-    { value: 'SA', label: 'Saturday' },
-    { value: 'SU', label: 'Sunday' }
+    { value: 'SU', label: 'Sun' },
+    { value: 'MO', label: 'Mon' },
+    { value: 'TU', label: 'Tue' },
+    { value: 'WE', label: 'Wed' },
+    { value: 'TH', label: 'Thu' },
+    { value: 'FR', label: 'Fri' },
+    { value: 'SA', label: 'Sat' }
   ];
 
   return (
@@ -378,7 +378,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
                 if (errors.recurrenceEndDate) setErrors(prev => ({...prev, recurrenceEndDate: ''}));
               }}
               InputLabelProps={{ shrink: true }}
-              helperText={errors.recurrenceEndDate || "Optional. Leave blank for default 1 month duration."}
+              helperText={errors.recurrenceEndDate || "Optional. Leave blank for indefinite recurrence."}
               error={!!errors.recurrenceEndDate}
               inputProps={{
                 min: date
@@ -534,9 +534,11 @@ const BookingForm: React.FC<BookingFormProps> = ({
             <Button onClick={onCancel} variant="outlined">
               Cancel
             </Button>
+            {canEditDelete && (
               <Button type="submit" variant="contained" color="primary">
-              { isEditing ? 'Save Changes' : 'Create Booking' }
-            </Button>
+                { isEditing ? 'Save Changes' : 'Create Booking' }
+              </Button>
+            )}
           </Box>
         </Grid>
       </Grid>
