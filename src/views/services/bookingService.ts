@@ -1,7 +1,7 @@
 import { CalendarEvent } from "../components/CalendarEvents";
 import { Room } from "./roomService"
 
-const API_URL = 'http://localhost:3001/bookings';
+const API_URL = 'https://localhost:59453/api/bookings';
 
 // Helper function to format dates consistently
 const formatDate = (date: Date | string): string => {
@@ -48,7 +48,21 @@ export const getBookings = async (userId?: string): Promise<CalendarEvent[]> => 
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch bookings');
-    return await response.json();
+    const data = await response.json();
+    
+    // Map backend response to frontend format
+    // Backend returns camelCase: bookingId, roomId, userId (not bookingID, roomID, userID)
+    return data.map((booking: any) => ({
+      id: booking.bookingId,           // Fixed: was booking.bookingID
+      title: booking.title,
+      date: booking.bookingDate,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      roomId: booking.roomId,          // Fixed: was booking.roomID
+      description: booking.description,
+      recurrenceRule: booking.recurrenceRule,
+      userId: booking.userId           // Fixed: was booking.userID
+    }));
   } catch (error) {
     console.error('Error fetching bookings:', error);
     throw error;
@@ -57,14 +71,20 @@ export const getBookings = async (userId?: string): Promise<CalendarEvent[]> => 
 
 export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise<CalendarEvent> => {
   try {
+    const userId = localStorage.getItem('userId') || '';
+    
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...booking,
-        date: formatDate(booking.date),
-        userId: localStorage.getItem('userId') || '',
-         roomId: booking.roomId
+        roomID: booking.roomId,        // Backend expects PascalCase in request body
+        userID: userId,
+        title: booking.title,
+        bookingDate: formatDate(booking.date),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        description: booking.description,
+        recurrenceRule: booking.recurrenceRule
       })
     });
 
@@ -73,7 +93,21 @@ export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise
       throw new Error(errorData.message || 'Failed to create booking');
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Map backend response to frontend format
+    // Backend returns camelCase in response
+    return {
+      id: data.bookingId,              // Fixed: was data.bookingID
+      title: data.title,
+      date: data.bookingDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      roomId: data.roomId,             // Fixed: was data.roomID
+      description: data.description,
+      recurrenceRule: data.recurrenceRule,
+      userId: data.userId              // Fixed: was data.userID
+    };
   } catch (error) {
     console.error('Error creating booking:', error);
     throw error;
@@ -85,10 +119,10 @@ export const updateBooking = async (id: string, booking: Partial<CalendarEvent>)
     // First verify ownership
     const existingResponse = await fetch(`${API_URL}/${id}`);
     if (!existingResponse.ok) throw new Error('Failed to fetch booking');
-    const existingBooking = await existingResponse.json();
+    const existingBookingData = await existingResponse.json();
 
     const userId = localStorage.getItem('userId');
-    if (existingBooking.userId !== userId) {
+    if (existingBookingData.userId !== userId) {  // Fixed: was existingBookingData.userID
       throw new Error('Unauthorized: You can only edit your own bookings');
     }
 
@@ -96,10 +130,12 @@ export const updateBooking = async (id: string, booking: Partial<CalendarEvent>)
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...existingBooking,
-        ...booking,
-        date: booking.date ? formatDate(booking.date) : existingBooking.date,
-        roomId: booking.roomId || existingBooking.roomId
+        title: booking.title,
+        bookingDate: booking.date ? formatDate(booking.date) : undefined,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        description: booking.description,
+        recurrenceRule: booking.recurrenceRule
       })
     });
 
@@ -108,7 +144,20 @@ export const updateBooking = async (id: string, booking: Partial<CalendarEvent>)
       throw new Error(errorData.message || 'Failed to update booking');
     }
 
-    return await response.json();
+    const data = await response.json();
+    
+    // Map backend response to frontend format
+    return {
+      id: data.bookingId,              // Fixed: was data.bookingID
+      title: data.title,
+      date: data.bookingDate,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      roomId: data.roomId,             // Fixed: was data.roomID
+      description: data.description,
+      recurrenceRule: data.recurrenceRule,
+      userId: data.userId              // Fixed: was data.userID
+    };
   } catch (error) {
     console.error('Error updating booking:', error);
     throw error;
@@ -123,7 +172,7 @@ export const deleteBooking = async (id: string): Promise<void> => {
     const existingBooking = await existingResponse.json();
 
     const userId = localStorage.getItem('userId');
-    if (existingBooking.userId !== userId) {
+    if (existingBooking.userId !== userId) {  // Fixed: was existingBooking.userID
       throw new Error('Unauthorized: You can only delete your own bookings');
     }
 

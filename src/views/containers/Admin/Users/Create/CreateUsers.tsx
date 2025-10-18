@@ -16,9 +16,9 @@ import {
   Divider
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
-import bcrypt from "bcryptjs";
 import { AdminSidebar } from "../../../../components/AdminSidebar";
 import { PATHS } from "../../../../../constant";
+import { createUser, RegisterData } from "../../../../services/authService";
 
 interface FormData {
   email: string;
@@ -27,7 +27,7 @@ interface FormData {
   lastName: string;
   company: string;
   password: string;
-  confirmPassword?: string; 
+  confirmPassword?: string;
 }
 
 const AdminUsersCreate: React.FC = () => {
@@ -125,21 +125,17 @@ const AdminUsersCreate: React.FC = () => {
     setSubmitSuccess(false);
 
     try {
-      const hashedPassword = await bcrypt.hash(formData.password, 10);
+      // Backend handles password hashing - send plain password
+      const userData: RegisterData = {
+        email: formData.email,
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        company: formData.company,
+        password: formData.password,
+      };
 
-      // Omit `confirmPassword` from the submitted data
-      const { confirmPassword, ...userToCreate } = formData;
-
-      const res = await fetch("http://localhost:3001/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...userToCreate, password: hashedPassword }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to create user: ${errorText || res.status}`);
-      }
+      await createUser(userData);
 
       setSubmitSuccess(true);
       setFormData({
@@ -151,10 +147,10 @@ const AdminUsersCreate: React.FC = () => {
         password: "",
         confirmPassword: "",
       });
+      
       setTimeout(() => navigate(PATHS.ADMIN_USERS.path), 1500);
     } catch (err: any) {
-      console.error(`Error creating user: `, err);
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(err.message || "Failed to create user");
     } finally {
       setLoading(false);
     }

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import bcrypt from "bcryptjs";
 import { Box, Typography, TextField, Button, Container, Grid, Checkbox, FormControlLabel, Paper } from "@mui/material";
 import { PATHS } from "../../../constant";
 import { LandingNav } from "../../components/LandingNav";
 import { SiteFooter } from "../../components/SiteFooter";
+import { register } from "../../services/authService";
 
 interface FormData {
   firstName: string;
@@ -46,44 +46,16 @@ const Register: React.FC = () => {
     }
 
     try {
-      // Check if email already in use
-      const emailCheck = await fetch(`http://localhost:3001/users?email=${formData.email}`);
-      const emailData = await emailCheck.json();
-      if (emailData.length > 0) {
-        throw new Error("This email is already registered.");
-      }
-
-      // Check if username already taken
-      const usernameCheck = await fetch(`http://localhost:3001/users?username=${formData.username}`);
-      const usernameData = await usernameCheck.json();
-      if (usernameData.length > 0) {
-        throw new Error("This username is already taken.");
-      }
-
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(formData.password, 10);
-
-      // Save to db.json
-      const res = await fetch("http://localhost:3001/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          password: hashedPassword,
-          confirmPassword: undefined,
-        }),
+      const user = await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
       });
 
-      if (!res.ok) {
-        throw new Error("Registration failed. Please try again later.");
-      }
-
-      // Authenticate and redirect to /user-profile
-      const user = await res.json();
-      // localStorage.setItem("userAuthenticated", "true"); 
-      // localStorage.setItem("userId", user.id);  
-
-      navigate(PATHS.HOMEPAGE.path);
+      // Redirect to login after successful registration
+      navigate(PATHS.LOGIN.path);
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again later.");
     } finally {
@@ -209,7 +181,7 @@ return (
                 },
               }}
             >
-              Sign Up
+              {loading ? "Signing up..." : "Sign Up"}
             </Button>
 
             <Box sx={{ textAlign: "center" }}>

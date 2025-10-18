@@ -16,9 +16,9 @@ import {
   Alert,
 } from "@mui/material";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import bcrypt from "bcryptjs";
 import { AdminSidebar } from "../../../../components/AdminSidebar";
 import { PATHS } from "../../../../../constant";
+import { getUserById, updateUser } from "../../../../services/authService";
 
 interface User {
   id: string;
@@ -51,31 +51,25 @@ const AdminUsersEdit: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
 
-useEffect(() => {
-  if (id) {
-    setLoading(true); 
-    fetch(`http://localhost:3001/users/${id}`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("User not found");
-        }
-        return res.json();
-      })
-      .then((user: User) => {
-        setFormData(user); 
-        setInitialPassword(user.password); 
-      })
-      .catch((err) => {
-        console.error(err);
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoading(false); 
-      });
-  } else {
-    setLoading(false); 
-  }
-}, [id]);
+  useEffect(() => {
+    if (id) {
+      setLoading(true);
+      getUserById(id)
+        .then((user: any) => {
+          setFormData(user);
+          setInitialPassword(user.password);
+        })
+        .catch((err) => {
+          console.error(err);
+          setError(err.message);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
 
   const validateForm = useCallback((): boolean => {
     let isValid = true;
@@ -136,21 +130,15 @@ useEffect(() => {
     setError(null);
 
     try {
-      let hashedPassword = formData.password;
-      if (passwordChanged) {
-        hashedPassword = await bcrypt.hash(formData.password, 10);
-      }
-
-      const res = await fetch(`http://localhost:3001/users/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, password: hashedPassword }),
+      await updateUser(id!, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        email: formData.email,
+        company: formData.company,
+        isActive: true,
+        password: passwordChanged ? formData.password : undefined
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Failed to update user");
-      }
 
       setSubmitSuccess(true);
       setTimeout(() => {
@@ -175,150 +163,150 @@ useEffect(() => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-return (
-  <AdminSidebar>
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-      <Box sx={{ p: 3, flexGrow: 1 }}>
-        <Breadcrumbs sx={{ mb: 3 }}>
-          <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">Dashboard</MuiLink>
-          <MuiLink component={Link} to={PATHS.ADMIN_USERS.path} color="inherit">Users</MuiLink>
-          <Typography color="text.primary">Edit User</Typography>
-        </Breadcrumbs>
+  return (
+    <AdminSidebar>
+      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
+        <Box sx={{ p: 3, flexGrow: 1 }}>
+          <Breadcrumbs sx={{ mb: 3 }}>
+            <MuiLink component={Link} to={PATHS.ADMIN_DASHBOARD.path} color="inherit">Dashboard</MuiLink>
+            <MuiLink component={Link} to={PATHS.ADMIN_USERS.path} color="inherit">Users</MuiLink>
+            <Typography color="text.primary">Edit User</Typography>
+          </Breadcrumbs>
 
-        {submitSuccess && (
-          <Alert severity="success" sx={{ mb: 3 }}>User updated successfully! Redirecting...</Alert>
-        )}
-        {error && <Alert severity="error">{error}</Alert>}
-
-        {formData ? (
-          <Paper sx={{ p: 3 }}>
-            <form onSubmit={handleSubmit}>
-
-                <Grid container spacing={3}>
-                  <Grid item xs={12}>
-                    <Typography variant="h6" gutterBottom>
-                      Basic Information
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      name="email"
-                      label="Email Address"
-                      value={formData.email}
-                      onChange={handleChange}
-                      error={Boolean(errors.email)}
-                      helperText={errors.email}
-                      disabled={loading}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      name="username"
-                      label="Username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      error={Boolean(errors.username)}
-                      helperText={errors.username}
-                      disabled={loading}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      name="firstName"
-                      label="First Name"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      error={Boolean(errors.firstName)}
-                      helperText={errors.firstName}
-                      disabled={loading}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      name="lastName"
-                      label="Last Name"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      error={Boolean(errors.lastName)}
-                      helperText={errors.lastName}
-                      disabled={loading}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      name="company"
-                      label="Company"
-                      value={formData.company}
-                      onChange={handleChange}
-                      error={Boolean(errors.company)}
-                      helperText={errors.company}
-                      disabled={loading}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Typography variant="h6" gutterBottom>
-                      Change Password
-                    </Typography>
-                    <Typography variant="body2" gutterBottom>
-                      Leave blank to keep the current password.
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      name="password"
-                      label="New Password"
-                      type="password"
-                      value={formData.password}
-                      onChange={handlePasswordChange}
-                      error={Boolean(errors.password)}
-                      helperText={errors.password}
-                      disabled={loading}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                      <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={loading}
-                      >
-                        {loading ? <CircularProgress size={24} /> : "Save"}
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        onClick={() => navigate(PATHS.ADMIN_USERS.path)}
-                        disabled={loading}
-                      >
-                        Cancel
-                      </Button>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </form>
-            </Paper>
-          ) : loading ? (
-            <CircularProgress /> // Only show the spinner when loading
-          ) : (
-            <Alert severity="warning">No user data available.</Alert>
+          {submitSuccess && (
+            <Alert severity="success" sx={{ mb: 3 }}>User updated successfully! Redirecting...</Alert>
           )}
+          {error && <Alert severity="error">{error}</Alert>}
+
+          {formData ? (
+            <Paper sx={{ p: 3 }}>
+              <form onSubmit={handleSubmit}>
+
+                  <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                      <Typography variant="h6" gutterBottom>
+                        Basic Information
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        name="email"
+                        label="Email Address"
+                        value={formData.email}
+                        onChange={handleChange}
+                        error={Boolean(errors.email)}
+                        helperText={errors.email}
+                        disabled={loading}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        name="username"
+                        label="Username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        error={Boolean(errors.username)}
+                        helperText={errors.username}
+                        disabled={loading}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        name="firstName"
+                        label="First Name"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        error={Boolean(errors.firstName)}
+                        helperText={errors.firstName}
+                        disabled={loading}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        name="lastName"
+                        label="Last Name"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        error={Boolean(errors.lastName)}
+                        helperText={errors.lastName}
+                        disabled={loading}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        name="company"
+                        label="Company"
+                        value={formData.company}
+                        onChange={handleChange}
+                        error={Boolean(errors.company)}
+                        helperText={errors.company}
+                        disabled={loading}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Typography variant="h6" gutterBottom>
+                        Change Password
+                      </Typography>
+                      <Typography variant="body2" gutterBottom>
+                        Leave blank to keep the current password.
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        name="password"
+                        label="New Password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handlePasswordChange}
+                        error={Boolean(errors.password)}
+                        helperText={errors.password}
+                        disabled={loading}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          disabled={loading}
+                        >
+                          {loading ? <CircularProgress size={24} /> : "Save"}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          onClick={() => navigate(PATHS.ADMIN_USERS.path)}
+                          disabled={loading}
+                        >
+                          Cancel
+                        </Button>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </form>
+              </Paper>
+            ) : loading ? (
+              <CircularProgress /> // Only show the spinner when loading
+            ) : (
+              <Alert severity="warning">No user data available.</Alert>
+            )}
+          </Box>
         </Box>
-      </Box>
-    </AdminSidebar>
-  );
+      </AdminSidebar>
+    );
 };
 
 export default AdminUsersEdit;

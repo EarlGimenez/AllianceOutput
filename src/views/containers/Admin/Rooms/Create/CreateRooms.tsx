@@ -19,6 +19,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { AdminSidebar } from "../../../../components/AdminSidebar";
 import { PATHS } from "../../../../../constant";
+import { createRoom, uploadRoomImage } from "../../../../services/roomService";
 
 const AdminRoomsCreate: React.FC = () => {
   const theme = useTheme();
@@ -93,54 +94,39 @@ const AdminRoomsCreate: React.FC = () => {
     return valid;
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault(); 
-  if (!validateForm()) return; 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  setIsSubmitting(true);
-  let imagePath = "";
+    setIsSubmitting(true);
+    let imagePath = "";
 
-  if (imageFile) {
-    const formData = new FormData(); 
-    formData.append('image', imageFile); 
     try {
-      const res = await fetch('http://localhost:3002/api/rooms/upload-image', {
-        method: 'POST',
-        body: formData,
-      }); 
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`); 
-      ({ imagePath } = await res.json()); 
-    } catch (err) { 
+      // Upload image if selected
+      if (imageFile) {
+        const uploadResult = await uploadRoomImage(imageFile);
+        imagePath = uploadResult.imagePath;
+      }
+
+      // Create room with the image path
+      await createRoom({
+        name: formData.name,
+        location: formData.location,
+        timeStart: formData.timeStart,
+        timeEnd: formData.timeEnd,
+        purpose: formData.purpose,
+        image: imagePath,
+      });
+
+      setSubmitSuccess(true);
+      setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || 'Failed to create room');
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-  }
-
-  const newRoom = {
-    name: formData.name,
-    location: formData.location,
-    timeStart: formData.timeStart,
-    timeEnd: formData.timeEnd,
-    purpose: formData.purpose,
-    image: imagePath, 
   };
-
-  try {
-    const res = await fetch('http://localhost:3001/rooms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRoom),
-    }); 
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`); 
-    setSubmitSuccess(true);
-    setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
-  } catch (err) { 
-    console.error(err);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
 
   return (
     <AdminSidebar>

@@ -28,16 +28,7 @@ import DeleteIcon from "@mui/icons-material/Delete"
 import { Link, useNavigate } from "react-router-dom"
 import { AdminSidebar } from "../../../components/AdminSidebar"
 import { PATHS } from "../../../../constant"
-
-interface Room {
-  id: number;
-  name: string;
-  location: string;
-  timeStart: string;
-  timeEnd: string;
-  purpose: string; 
-  image: string; 
-}
+import { getRooms, deleteRoom, Room } from "../../../services/roomService"
 
 export const AdminRooms: React.FC = () => {
   const theme = useTheme()
@@ -50,18 +41,24 @@ export const AdminRooms: React.FC = () => {
   const [roomToDelete, setRoomToDelete] = useState<Room | null>(null)
 
   useEffect(() => {
-    fetch("http://localhost:3001/rooms")
-      .then(async res => {
-        if (!res.ok) throw new Error(`Failed to load (${res.status})`)
-        return res.json()
-      })
-      .then((data: Room[]) => setRooms(data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+    loadRooms()
   }, [])
 
-  const handleEditRoom = (id: number) => {
-    navigate(PATHS.ADMIN_ROOMS_EDIT.path.replace(":id", String(id)))
+  const loadRooms = async () => {
+    try {
+      setLoading(true)
+      const data = await getRooms()
+      setRooms(data)
+      setError(undefined)
+    } catch (err: any) {
+      setError(err.message || 'Failed to load rooms')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEditRoom = (id: string) => {
+    navigate(PATHS.ADMIN_ROOMS_EDIT.path.replace(":id", id))
   }
 
   const handleDeleteClick = (room: Room) => {
@@ -69,23 +66,20 @@ export const AdminRooms: React.FC = () => {
     setDeleteDialogOpen(true)
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!roomToDelete) return
 
-    fetch(`http://localhost:3001/rooms/${roomToDelete.id}`, {
-      method: "DELETE",
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-        setRooms(current => current.filter(r => r.id !== roomToDelete.id))
-        setDeleteDialogOpen(false)
-        setRoomToDelete(null)
-      })
-      .catch(err => {
-        console.error(err)
-        setError("Could not delete room. Please try again.")
-        setDeleteDialogOpen(false)
-      })
+    try {
+      await deleteRoom(roomToDelete.id)
+      setRooms(current => current.filter(r => r.id !== roomToDelete.id))
+      setDeleteDialogOpen(false)
+      setRoomToDelete(null)
+      setError(undefined)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Could not delete room. Please try again.')
+      setDeleteDialogOpen(false)
+    }
   }
 
   return (
@@ -98,12 +92,12 @@ export const AdminRooms: React.FC = () => {
         ) : (
           <Paper sx={{ p: 3 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-              <Typography variant="h6">Meeting Rooms</Typography>
+              <Typography variant="h4">Rooms</Typography>
               <Button
-                variant="contained"
-                startIcon={<AddIcon />}
                 component={Link}
                 to={PATHS.ADMIN_ROOMS_CREATE.path}
+                variant="contained"
+                startIcon={<AddIcon />}
                 sx={{ bgcolor: "#1e5393", "&:hover": { bgcolor: "#184377" } }}
               >
                 Create Room

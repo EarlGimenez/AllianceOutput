@@ -23,6 +23,7 @@ import MonthView from '../../components/MonthView';
 import EventPopover from '../../components/EventPopover';
 
 const generateBookingColor = (id: string, alpha = 0.7) => {
+  if (!id) return `hsla(200, 80%, 60%, ${alpha})`;
   const hash = id.split('').reduce((acc, char) => {
     return char.charCodeAt(0) + ((acc << 5) - acc);
   }, 0);

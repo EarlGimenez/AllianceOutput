@@ -28,16 +28,7 @@ import DeleteIcon from "@mui/icons-material/Delete"
 import { Link, useNavigate } from "react-router-dom"
 import { AdminSidebar } from "../../../components/AdminSidebar"
 import { PATHS } from "../../../../constant"
-
-interface User {
-  id: string
-  email: string
-  username: string
-  firstName:string
-  lastName: string
-  fullName: string 
-  company: string
-}
+import { getAllUsers, deleteUser, User } from "../../../services/authService"
 
 export const AdminUsers: React.FC = () => {
   const theme = useTheme()
@@ -49,51 +40,46 @@ export const AdminUsers: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
 
-useEffect(() => {
-  fetch("http://localhost:3001/users")
-    .then(async res => {
-      if (!res.ok) throw new Error(`Failed to load (${res.status})`);
-      return res.json();
-    })
-    .then((data: User[]) => {
-      const usersWithStringIds = data.map(user => ({
-        ...user,
-        id: String(user.id),
-        fullName: `${user.firstName} ${user.lastName}`
-      }));
-      setUsers(usersWithStringIds);
-    })
-    .catch(err => setError(err.message))
-    .finally(() => setLoading(false));
-}, []);
+  useEffect(() => {
+    loadUsers()
+  }, [])
 
+  const loadUsers = async () => {
+    try {
+      setLoading(true)
+      const data = await getAllUsers()
+      setUsers(data)
+      setError(undefined)
+    } catch (err: any) {
+      setError(err.message || 'Failed to load users')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-const handleEditUser = (id: string) => {
-  console.log(`id: ${id}, path: ${PATHS.ADMIN_USERS_EDIT.path.replace(":id", id)}`);
-  navigate(PATHS.ADMIN_USERS_EDIT.path.replace(":id", id));
-}
-
+  const handleEditUser = (id: string) => {
+    navigate(PATHS.ADMIN_USERS_EDIT.path.replace(":id", id))
+  }
 
   const handleDeleteClick = (user: User) => {
     setUserToDelete(user)
     setDeleteDialogOpen(true)
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!userToDelete) return
 
-    fetch(`http://localhost:3001/users/${userToDelete.id}`, { method: "DELETE" })
-      .then(res => {
-        if (!res.ok) throw new Error(`Delete failed (${res.status})`)
-        setUsers(u => u.filter(x => x.id !== userToDelete.id))
-        setDeleteDialogOpen(false)
-        setUserToDelete(null)
-      })
-      .catch(err => {
-        console.error(err)
-        setError("Could not delete user.")
-        setDeleteDialogOpen(false)
-      })
+    try {
+      await deleteUser(userToDelete.userId)
+      setUsers(current => current.filter(u => u.userId !== userToDelete.userId))
+      setDeleteDialogOpen(false)
+      setUserToDelete(null)
+      setError(undefined)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Could not delete user.')
+      setDeleteDialogOpen(false)
+    }
   }
 
   if (loading) return <AdminSidebar><CircularProgress /></AdminSidebar>
@@ -130,18 +116,18 @@ const handleEditUser = (id: string) => {
               </TableHead>
                 <TableBody>
                   {users.map(user => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.id}</TableCell>
+                    <TableRow key={user.userId}>
+                      <TableCell>{user.userId}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.username}</TableCell>
-                       <TableCell>{user.fullName}</TableCell>
+                       <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
                       <TableCell>{user.company}</TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <IconButton onClick={() => handleEditUser(user.id)} sx={{ color: "#1e5393" }}>
+                          <IconButton onClick={() => handleEditUser(user.userId)} sx={{ color: "#1e5393" }}>
                             <EditIcon />
                           </IconButton>
-                          <Typography variant="body2" onClick={() => handleEditUser(user.id)} sx={{ cursor: "pointer", color: "#1e5393" }}>
+                          <Typography variant="body2" onClick={() => handleEditUser(user.userId)} sx={{ cursor: "pointer", color: "#1e5393" }}>
                             Edit
                           </Typography>
                         </Box>

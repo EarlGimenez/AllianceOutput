@@ -17,7 +17,7 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
 import { PATHS } from "../../../constant"
-import bcrypt from "bcryptjs";
+import { login } from "../../services/authService";
 
 
 const SignIn: React.FC = () => {
@@ -27,49 +27,23 @@ const SignIn: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-
-type User = {
-  id: string;
-  email: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  password: string;
-  // Add other fields as needed
-};
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      const res = await fetch(`http://localhost:3001/users?email=${email}`);
-      const users: User[] = await res.json();
+      const user = await login({ email, password });
 
-      if (users.length === 0) {
-        throw new Error("No user found with that email address.");
-      }
-
-      const user = users[0];
-
-      // Check if password is correct using bcrypt
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        throw new Error("Incorrect password.");
-      }
-
-      // Set authentication state (e.g., local storage)
+      // Set authentication state
       localStorage.setItem("userAuthenticated", "true"); 
-      localStorage.setItem("userId", user.id); 
-      //Store user details in local storage
+      localStorage.setItem("userId", user.userId); // Changed from user.userID to user.userId
       localStorage.setItem("user.firstName", user.firstName);
       localStorage.setItem('user.name', user.username);
       localStorage.setItem('user.email', user.email);
       localStorage.setItem('user.lastName', user.lastName);
-      // Store other user details as needed
 
-      // Redirect to /user-profile or previous route
+      // Redirect to user profile
       navigate(PATHS.USER_PROFILE.path);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
@@ -135,6 +109,7 @@ type User = {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={isLoading}
               sx={{
                 mt: 2,
                 mb: 2,
@@ -145,32 +120,8 @@ type User = {
                 },
               }}
             >
-              Sign In
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
-
-            {/* <Divider sx={{ my: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                OR
-              </Typography>
-            </Divider>
-
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={4}>
-                <Button fullWidth variant="outlined" startIcon={<GoogleIcon />} sx={{ py: 1 }}>
-                  Google
-                </Button>
-              </Grid>
-              <Grid item xs={4}>
-                <Button fullWidth variant="outlined" startIcon={<FacebookIcon />} sx={{ py: 1 }}>
-                  Facebook
-                </Button>
-              </Grid>
-              <Grid item xs={4}>
-                <Button fullWidth variant="outlined" startIcon={<AppleIcon />} sx={{ py: 1 }}>
-                  Apple
-                </Button>
-              </Grid>
-            </Grid> */}
 
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2">

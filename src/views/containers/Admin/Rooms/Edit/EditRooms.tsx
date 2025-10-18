@@ -19,6 +19,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminSidebar } from "../../../../components/AdminSidebar";
 import { PATHS } from "../../../../../constant";
+import { getRoomById, updateRoom, uploadRoomImage } from "../../../../services/roomService";
 
 const AdminRoomsEdit: React.FC = () => {
   const theme = useTheme();
@@ -44,11 +45,15 @@ const AdminRoomsEdit: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`http://localhost:3001/rooms/${id}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Room not found");
-        const room = await res.json();
+    const loadRoom = async () => {
+      if (!id) {
+        navigate(PATHS.ADMIN_ROOMS.path);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const room = await getRoomById(id);
         setFormData({
           name: room.name,
           location: room.location,
@@ -57,9 +62,15 @@ const AdminRoomsEdit: React.FC = () => {
           purpose: room.purpose,
           image: room.image,
         });
-      })
-      .catch(() => navigate(PATHS.ADMIN_ROOMS.path))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error(err);
+        navigate(PATHS.ADMIN_ROOMS.path);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRoom();
   }, [id, navigate]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -114,52 +125,39 @@ const AdminRoomsEdit: React.FC = () => {
     return valid;
   };
 
-// AdminRoomsEdit.tsx
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm() || !id) return;
 
-  setIsSubmitting(true);
-  let imagePath = formData.image; 
-
-  if (imageFile) {
-    const formDataToSend = new FormData(); 
-    formDataToSend.append('image', imageFile);
+    setIsSubmitting(true);
+    let imagePath = formData.image;
 
     try {
-      const uploadRes = await fetch('http://localhost:3002/api/rooms/upload-image', {
-        method: 'POST',
-        body: formDataToSend,
-      });
-      if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status}`);
-      ({ imagePath } = await uploadRes.json());
-    } catch (err) {
-      console.error(err);
-      setIsSubmitting(false);
-      return;
-    }
-  }
- 
-  const updatedRoom = {
-    ...formData,
-    image: imagePath, 
-  };
+      // Upload new image if selected
+      if (imageFile) {
+        const uploadResult = await uploadRoomImage(imageFile);
+        imagePath = uploadResult.imagePath;
+      }
 
-  try {
-    const updateRes = await fetch(`http://localhost:3001/rooms/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedRoom),
-    });
-    if (!updateRes.ok) throw new Error(`Update failed: ${updateRes.status}`);
-    setSubmitSuccess(true);
-    setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      // Update room with the image path
+      await updateRoom(id, {
+        name: formData.name,
+        location: formData.location,
+        timeStart: formData.timeStart,
+        timeEnd: formData.timeEnd,
+        purpose: formData.purpose,
+        image: imagePath,
+      });
+
+      setSubmitSuccess(true);
+      setTimeout(() => navigate(PATHS.ADMIN_ROOMS.path), 1500);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to update room');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
