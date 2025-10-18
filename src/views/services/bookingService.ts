@@ -77,8 +77,8 @@ export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        roomID: booking.roomId,        // Backend expects PascalCase in request body
-        userID: userId,
+        roomId: booking.roomId,        // Changed from roomID - backend now expects camelCase
+        userId: userId,                 // Changed from userID
         title: booking.title,
         bookingDate: formatDate(booking.date),
         startTime: booking.startTime,
@@ -96,17 +96,16 @@ export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise
     const data = await response.json();
     
     // Map backend response to frontend format
-    // Backend returns camelCase in response
     return {
-      id: data.bookingId,              // Fixed: was data.bookingID
+      id: data.bookingId,
       title: data.title,
       date: data.bookingDate,
       startTime: data.startTime,
       endTime: data.endTime,
-      roomId: data.roomId,             // Fixed: was data.roomID
+      roomId: data.roomId,
       description: data.description,
       recurrenceRule: data.recurrenceRule,
-      userId: data.userId              // Fixed: was data.userID
+      userId: data.userId
     };
   } catch (error) {
     console.error('Error creating booking:', error);
