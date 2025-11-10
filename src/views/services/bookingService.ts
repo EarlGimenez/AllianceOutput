@@ -69,6 +69,44 @@ export const getBookings = async (userId?: string): Promise<CalendarEvent[]> => 
   }
 };
 
+export const getBookingsInDateRange = async (startDate: Date, endDate: Date): Promise<CalendarEvent[]> => {
+  const url = `${API_URL}/range?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
+
+  try {
+    console.log('Fetching bookings from:', url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        url: url
+      });
+      throw new Error(`Failed to fetch bookings in date range: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Map backend response to frontend format
+    return data.map((booking: any) => ({
+      id: booking.bookingId,
+      title: booking.title,
+      date: booking.bookingDate,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      roomId: booking.roomId,
+      description: booking.description,
+      recurrenceRule: booking.recurrenceRule,
+      userId: booking.userId
+    }));
+  } catch (error) {
+    console.error('Error fetching bookings in date range:', error);
+    throw error;
+  }
+};
+
 export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise<CalendarEvent> => {
   try {
     const userId = localStorage.getItem('userId') || '';
@@ -115,6 +153,8 @@ export const createBooking = async (booking: Omit<CalendarEvent, 'id'>): Promise
 
 export const updateBooking = async (id: string, booking: Partial<CalendarEvent>): Promise<CalendarEvent> => {
   try {
+    console.log('Updating booking:', id, booking);
+    
     // First verify ownership
     const existingResponse = await fetch(`${API_URL}/${id}`);
     if (!existingResponse.ok) throw new Error('Failed to fetch booking');
@@ -125,25 +165,32 @@ export const updateBooking = async (id: string, booking: Partial<CalendarEvent>)
       throw new Error('Unauthorized: You can only edit your own bookings');
     }
 
+    const updatePayload = {
+      roomId: booking.roomId,
+      title: booking.title,
+      bookingDate: booking.date ? formatDate(booking.date) : undefined,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      description: booking.description,
+      recurrenceRule: booking.recurrenceRule
+    };
+    
+    console.log('Update payload:', updatePayload);
+
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: booking.title,
-        bookingDate: booking.date ? formatDate(booking.date) : undefined,
-        startTime: booking.startTime,
-        endTime: booking.endTime,
-        description: booking.description,
-        recurrenceRule: booking.recurrenceRule
-      })
+      body: JSON.stringify(updatePayload)
     });
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('Update failed:', errorData);
       throw new Error(errorData.message || 'Failed to update booking');
     }
 
     const data = await response.json();
+    console.log('Update successful, response:', data);
     
     // Map backend response to frontend format
     return {

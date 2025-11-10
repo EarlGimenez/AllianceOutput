@@ -92,6 +92,10 @@ export const PATHS = {
     path: "/admin/users/edit/:id",
     name: "Edit User",
   },
+  ADMIN_NOTIFICATIONS: {
+    path: "/admin/notifications",
+    name: "Notifications",
+  },
   NOT_FOUND: {
     path: "*",
     label: "Not Found"

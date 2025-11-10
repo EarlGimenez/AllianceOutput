@@ -261,6 +261,7 @@ const BookingForm: React.FC<BookingFormProps> = ({
         recurrenceRule
       };
 
+      console.log('BookingForm submitting data:', bookingData);
       onSubmit(bookingData);
     } catch (error) {
       console.error('Error checking booking conflicts:', error);
@@ -429,7 +430,9 @@ const BookingForm: React.FC<BookingFormProps> = ({
               value={selectedRoomId}
               label="Room"
               onChange={(e) => {
-                setSelectedRoomId(e.target.value as string);
+                const newRoomId = e.target.value as string;
+                console.log('Room changed from', selectedRoomId, 'to:', newRoomId);
+                setSelectedRoomId(newRoomId);
                 if (errors.room) setErrors(prev => ({...prev, room: ''}));
               }}
               disabled={isEditing && !canEditDelete}

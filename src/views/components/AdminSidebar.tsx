@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   AppBar,
-  Badge,
   Box,
   Button,
   Divider,
@@ -15,8 +14,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Menu,
-  MenuItem,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -26,11 +23,12 @@ import DashboardIcon from "@mui/icons-material/Dashboard"
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"
 import PeopleIcon from "@mui/icons-material/People"
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive"
 import MenuIcon from "@mui/icons-material/Menu"
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft"
 import LogoutIcon from "@mui/icons-material/Logout"
-import NotificationsIcon from "@mui/icons-material/Notifications"
 import { PATHS } from "../../constant"
+import { NotificationBadge } from "./NotificationBadge"
 
 const drawerWidth = 240
 
@@ -46,13 +44,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
 
   const [open, setOpen] = useState(!isMobile)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null)
-
-  const notifications = [
-    { id: 1, message: "New user registered: Sarah Johnson", time: "15 min ago" },
-    { id: 2, message: "Room 101 has been booked for tomorrow", time: "1 hour ago" },
-    { id: 3, message: "System update scheduled for tonight", time: "3 hours ago" },
-  ]
 
   useEffect(() => {
     const adminAuthenticated = localStorage.getItem("adminAuthenticated") === "true"
@@ -65,15 +56,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
     localStorage.removeItem("adminAuthenticated")
     navigate(PATHS.ADMIN_LOGIN.path)
   }
-  const handleNotificationMenuOpen = (e: React.MouseEvent<HTMLElement>) =>
-    setNotificationAnchorEl(e.currentTarget)
-  const handleNotificationMenuClose = () => setNotificationAnchorEl(null)
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: PATHS.ADMIN_DASHBOARD.path, active: location.pathname === PATHS.ADMIN_DASHBOARD.path },
     { text: "Calendar",  icon: <CalendarMonthIcon/>, path: PATHS.ADMIN_CALENDAR.path, active: location.pathname === PATHS.ADMIN_CALENDAR.path },
     { text: "Rooms",     icon: <MeetingRoomIcon/>, path: PATHS.ADMIN_ROOMS.path, active: location.pathname.startsWith("/admin/rooms") },
     { text: "Users",     icon: <PeopleIcon/>, path: PATHS.ADMIN_USERS.path, active: location.pathname.startsWith("/admin/users") },
+    { text: "Notifications", icon: <NotificationsActiveIcon/>, path: PATHS.ADMIN_NOTIFICATIONS.path, active: location.pathname === PATHS.ADMIN_NOTIFICATIONS.path },
   ]
 
   if (!isAdmin) return null
@@ -103,17 +92,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
               Bookit Admin
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <IconButton
-              size="large"
-              color="inherit"
-              onClick={handleNotificationMenuOpen}
-              sx={{ mr: 1 }}
-            >
-              <Badge badgeContent={notifications.length} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {/* Dynamic Notification Badge */}
+            <NotificationBadge />
+            
             <Button
               color="inherit"
               onClick={handleLogout}
@@ -124,49 +106,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
           </Box>
         </Toolbar>
       </AppBar>
-
-      {/* Notifications Menu */}
-      <Menu
-        anchorEl={notificationAnchorEl}
-        open={Boolean(notificationAnchorEl)}
-        onClose={handleNotificationMenuClose}
-        PaperProps={{ elevation: 3, sx: { minWidth: 300, maxWidth: 350 } }}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-      >
-        <Box
-          sx={{
-            px: 2, py: 1,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight="medium">
-            Notifications
-          </Typography>
-          <Typography variant="body2" color="primary" sx={{ cursor: "pointer" }}>
-            Mark all as read
-          </Typography>
-        </Box>
-        <Divider />
-        {notifications.map(n => (
-          <MenuItem key={n.id} onClick={handleNotificationMenuClose} sx={{ py: 1.5 }}>
-            <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography variant="body2">{n.message}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {n.time}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-        <Divider />
-        <MenuItem onClick={handleNotificationMenuClose} sx={{ justifyContent: "center" }}>
-          <Typography variant="body2" color="primary">
-            View all notifications
-          </Typography>
-        </MenuItem>
-      </Menu>
 
       {/* Sidebar Drawer */}
       <Drawer
@@ -179,7 +118,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            top: ["48px", "56px", "64px"], // match AppBar height
+            top: ["48px", "56px", "64px"],
           },
         }}
       >
@@ -243,9 +182,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
             flexGrow: 1,
             p: 3,
             mt: ["48px","56px","64px"],
-            // ONLY push over when the drawer is open:
             ml: open ? `0px` : 0,
-            // And shrink width accordingly (optional if using flexGrow):
             width: open
             ? `calc(100% - ${drawerWidth}px)`
             : "100vw",
@@ -255,7 +192,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ children }) => {
             }),
         }}
       >
-
         {children}
       </Box>
     </Box>

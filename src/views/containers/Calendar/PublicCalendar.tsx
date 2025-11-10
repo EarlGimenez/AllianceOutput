@@ -19,12 +19,29 @@ const PublicCalendar = () => {
     fetchBookings();
   }, [currentDate]);
 
+  const handleAddEvent = async (newEvent: CalendarEvent) => {
+    setEvents(prev => [...prev, newEvent]);
+  };
+
+  const handleEditEvent = async (updatedEvent: CalendarEvent) => {
+    setEvents(prev => prev.map(event => 
+      event.id === updatedEvent.id ? updatedEvent : event
+    ));
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    setEvents(prev => prev.filter(event => event.id !== eventId));
+  };
+
   return (
     <div style={{ height: '100vh' }}>
       <Calendar 
         events={events}
         currentDate={currentDate}
         onDateChange={setCurrentDate}
+        parentOnAddEvent={handleAddEvent}
+        parentOnEditEvent={handleEditEvent}
+        parentOnDeleteEvent={handleDeleteEvent}
       />
     </div>
   );

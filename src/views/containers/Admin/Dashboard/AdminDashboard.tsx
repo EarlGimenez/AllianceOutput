@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Box, Typography, Grid, Card, CardContent, Paper, useTheme, CircularProgress } from "@mui/material"
+import { useState, useEffect } from "react"
+import { Box, Typography, Grid, Card, CardContent, Paper, useTheme, CircularProgress, Alert } from "@mui/material"
 import {
   LineChart,
   Line,
@@ -11,9 +12,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar
 } from "recharts"
@@ -21,41 +19,31 @@ import PeopleIcon from "@mui/icons-material/People"
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"
 import TrendingUpIcon from "@mui/icons-material/TrendingUp"
 import { AdminSidebar } from "../../../components/AdminSidebar"
+import { getDashboardStatistics, type DashboardStatistics } from "../../../services/dashboardService"
 
 const AdminDashboard: React.FC = () => {
   const theme = useTheme()
+  const [statistics, setStatistics] = useState<DashboardStatistics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const metrics = {
-    totalUsers: 1248,
-    activeUsers: 876,
-    totalRooms: 32,
-    bounceRate: 24,
-    roomUsageRate: 78,
+  useEffect(() => {
+    fetchDashboardStatistics()
+  }, [])
+
+  const fetchDashboardStatistics = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getDashboardStatistics()
+      setStatistics(data)
+    } catch (err) {
+      console.error("Error fetching dashboard statistics:", err)
+      setError("Failed to load dashboard statistics. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
   }
-
-  const userActivity = [
-    { name: "Jan", active: 400, total: 600 },
-    { name: "Feb", active: 450, total: 650 },
-    { name: "Mar", active: 480, total: 700 },
-    { name: "Apr", active: 520, total: 750 },
-    { name: "May", active: 600, total: 800 },
-    { name: "Jun", active: 650, total: 850 },
-    { name: "Jul", active: 700, total: 900 },
-    { name: "Aug", active: 750, total: 950 },
-    { name: "Sep", active: 800, total: 1000 },
-    { name: "Oct", active: 850, total: 1100 },
-    { name: "Nov", active: 870, total: 1200 },
-    { name: "Dec", active: 876, total: 1248 },
-  ]
-
-  const roomUsageByType = [
-    { name: "Conference", value: 12 },
-    { name: "Training", value: 8 },
-    { name: "Meeting", value: 10 },
-    { name: "Interview", value: 2 },
-  ]
-
-  const COLORS = ["#1e88e5", "#43a047", "#fb8c00", "#8e24aa"]
 
   const GaugeChart = ({ value, color, label }: { value: number; color: string; label: string }) => {
     return (
@@ -99,12 +87,41 @@ const AdminDashboard: React.FC = () => {
     )
   }
 
+  if (loading) {
+    return (
+      <AdminSidebar>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
+          <CircularProgress size={60} />
+        </Box>
+      </AdminSidebar>
+    )
+  }
+
+  if (error || !statistics) {
+    return (
+      <AdminSidebar>
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">{error || "Unable to load dashboard data"}</Alert>
+        </Box>
+      </AdminSidebar>
+    )
+  }
+
   return (
     <AdminSidebar>
-      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", width: "100%" }}>
-        <Box sx={{ p: 3, flexGrow: 1 }}>
+      <Box sx={{ flexGrow: 1, p: 3 }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
+            Dashboard Overview
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Welcome back! Here's what's happening with your platform today.
+          </Typography>
+        </Box>
+
+        <Box>
           {/* Metrics Cards */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: "100%" }}>
                 <CardContent>
@@ -114,10 +131,10 @@ const AdminDashboard: React.FC = () => {
                         Total Users
                       </Typography>
                       <Typography variant="h4" sx={{ fontWeight: "medium", mb: 1 }}>
-                        {metrics.totalUsers}
+                        {statistics.totalUsers}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        +12% from last month
+                      <Typography variant="caption" color="success.main">
+                        {statistics.activeUsers} active users
                       </Typography>
                     </Box>
                     <PeopleIcon sx={{ fontSize: 40, color: "#1e5393" }} />
@@ -125,7 +142,6 @@ const AdminDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-
             <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: "100%" }}>
                 <CardContent>
@@ -135,18 +151,19 @@ const AdminDashboard: React.FC = () => {
                         Active Users
                       </Typography>
                       <Typography variant="h4" sx={{ fontWeight: "medium", mb: 1 }}>
-                        {metrics.activeUsers}
+                        {statistics.activeUsers}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        70% of total users
+                        {statistics.totalUsers > 0 
+                          ? `${Math.round((statistics.activeUsers / statistics.totalUsers) * 100)}% of total`
+                          : "No users yet"}
                       </Typography>
                     </Box>
-                    <TrendingUpIcon sx={{ fontSize: 40, color: "#1e5393" }} />
+                    <TrendingUpIcon sx={{ fontSize: 40, color: "#43a047" }} />
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
-
             <Grid item xs={12} sm={6} md={4}>
               <Card sx={{ height: "100%" }}>
                 <CardContent>
@@ -156,10 +173,10 @@ const AdminDashboard: React.FC = () => {
                         Total Rooms
                       </Typography>
                       <Typography variant="h4" sx={{ fontWeight: "medium", mb: 1 }}>
-                        {metrics.totalRooms}
+                        {statistics.totalRooms}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        +3 new rooms added
+                        {statistics.totalBookings} total bookings
                       </Typography>
                     </Box>
                     <MeetingRoomIcon sx={{ fontSize: 40, color: "#1e5393" }} />
@@ -180,7 +197,7 @@ const AdminDashboard: React.FC = () => {
                 <Box sx={{ height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={userActivity}
+                      data={statistics.userActivity}
                       margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -209,8 +226,8 @@ const AdminDashboard: React.FC = () => {
                   System Metrics
                 </Typography>
                 <Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", py: 3 }}>
-                  <GaugeChart value={metrics.bounceRate} color="#ff9800" label="Bounce Rate" />
-                  <GaugeChart value={metrics.roomUsageRate} color="#4caf50" label="Room Usage" />
+                  <GaugeChart value={statistics.bounceRate} color="#ff9800" label="Bounce Rate" />
+                  <GaugeChart value={statistics.roomUsageRate} color="#4caf50" label="Room Usage" />
                 </Box>
               </Paper>
             </Grid>
@@ -224,7 +241,7 @@ const AdminDashboard: React.FC = () => {
                 <Box sx={{ height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={roomUsageByType}
+                      data={statistics.roomUsageByType}
                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -238,7 +255,6 @@ const AdminDashboard: React.FC = () => {
                 </Box>
               </Paper>
             </Grid>
-
           </Grid>
         </Box>
       </Box>

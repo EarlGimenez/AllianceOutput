@@ -201,10 +201,12 @@ const handleBookingSubmit = async (bookingData: Partial<CalendarEvent>) => {
     
     if (bookingData.id) {
       // Update existing booking
+      console.log('Calendar updating booking with data:', bookingData);
       const updatedBooking = await updateBooking(bookingData.id, {
         ...bookingData,
         date: bookingDate
       });
+      console.log('Calendar received updated booking:', updatedBooking);
       
       if (parentOnEditEvent) {
         await parentOnEditEvent(updatedBooking);

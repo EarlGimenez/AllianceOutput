@@ -97,6 +97,7 @@ export const AppRoutes = () => (
           <Route path="create" element={<Views.AdminUsersCreate />} />
           <Route path="edit/:id" element={<Views.AdminUsersEdit />} />
         </Route>
+        <Route path="notifications" element={<Views.AdminNotifications />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>
 

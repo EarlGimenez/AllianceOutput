@@ -43,7 +43,7 @@ import EventIcon from "@mui/icons-material/Event";
 import { LandingNav } from "../../components/LandingNav";
 import { SiteFooter } from "../../components/SiteFooter";
 import BookingForm from "../../components/BookingForm";
-import { createBooking, updateBooking, deleteBooking, getBookings as fetchBookings } from "../../services/bookingService";
+import { createBooking, updateBooking, deleteBooking, getBookings as fetchBookings, getBookingsInDateRange } from "../../services/bookingService";
 import { getRooms } from "../../services/roomService";
 import { format, parseISO, getDate, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 
@@ -54,7 +54,7 @@ interface UserBooking {
   startTime: string;
   endTime: string;
   roomId: string;
-  description: string;
+  description?: string;
   userId: string;
   recurrenceRule?: string;
 }
@@ -63,6 +63,10 @@ interface Room {
   id: string;
   name: string;
   location: string;
+  timeStart: string;
+  timeEnd: string;
+  purpose: string;
+  image: string;
 }
 
 interface TabPanelProps {
@@ -160,6 +164,7 @@ function a11yProps(index: number) {
 const UserProfile: React.FC = () => {
   const [showAllBookings, setShowAllBookings] = useState(false);
   const [bookings, setBookings] = useState<UserBooking[]>([]);
+  const [allBookings, setAllBookings] = useState<UserBooking[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -197,21 +202,51 @@ const UserProfile: React.FC = () => {
     });
   }, [bookings]);
 
+  const flattenedAllBookings = useMemo(() => {
+    return allBookings.flatMap(booking => {
+      if (!booking.recurrenceRule) {
+        return [{ 
+          ...booking,
+          date: booking.date, 
+          isRecurring: false 
+        }];
+      }
+      
+      const bookingDate = parseISO(booking.date);
+      const dates = generateRecurringDates(bookingDate, booking.recurrenceRule);
+      
+      return dates.map(date => ({
+        ...booking,
+        date: format(date, 'yyyy-MM-dd'), 
+        isRecurring: true
+      }));
+    });
+  }, [allBookings]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [roomsData, bookingsData] = await Promise.all([
+        // Calculate date range for current month +/- 1 month to reduce data load
+        const startDate = subMonths(selectedDate, 1);
+        const endDate = addMonths(selectedDate, 1);
+        
+        const [roomsData, userBookingsData, allBookingsData] = await Promise.all([
           getRooms(),
-          fetchBookings(userId)
+          fetchBookings(userId), // Keep all user bookings for list/table views
+          getBookingsInDateRange(startDate, endDate) // Fetch limited range for calendar
         ]);
         setRooms(roomsData);
-        setBookings(bookingsData);
+        setBookings(userBookingsData);
+        setAllBookings(allBookingsData);
       } catch (error) {
         console.error("Error loading data:", error);
       }
     };
-    loadData();
-  }, [userId]);
+
+    if (userId) {
+      loadData();
+    }
+  }, [userId, selectedDate]);
 
   const handleCreateBooking = async (bookingData: Partial<UserBooking>) => {
     try {
@@ -221,6 +256,7 @@ const UserProfile: React.FC = () => {
         roomId: bookingData.roomId || ""
       } as Omit<UserBooking, 'id'>);
       setBookings([...bookings, newBooking]);
+      setAllBookings([...allBookings, newBooking]); // Add to all bookings
       setIsBookingFormOpen(false);
     } catch (error) {
       console.error("Error creating booking:", error);
@@ -233,6 +269,7 @@ const UserProfile: React.FC = () => {
     try {
       const updatedBooking = await updateBooking(editingBooking.id, bookingData);
       setBookings(bookings.map(b => b.id === updatedBooking.id ? updatedBooking : b));
+      setAllBookings(allBookings.map(b => b.id === updatedBooking.id ? updatedBooking : b)); // Update in all bookings
       setIsBookingFormOpen(false);
       setEditingBooking(null);
     } catch (error) {
@@ -246,6 +283,7 @@ const UserProfile: React.FC = () => {
     try {
       await deleteBooking(bookingToDelete);
       setBookings(bookings.filter(b => b.id !== bookingToDelete));
+      setAllBookings(allBookings.filter(b => b.id !== bookingToDelete)); // Remove from all bookings
       setDeleteDialogOpen(false);
       setBookingToDelete(null);
       if (editingBooking?.id === bookingToDelete) {
@@ -351,7 +389,22 @@ const generateCalendarDays = () => {
     <Box>
       {filteredBookings.length > 0 ? (
         filteredBookings.map(booking => (
-          <Paper key={`${booking.id}-${booking.date}`} sx={{ p: 3, mb: 2 }}>
+          <Paper 
+            key={`${booking.id}-${booking.date}`} 
+            sx={{ 
+              p: 3, 
+              mb: 2,
+              cursor: 'pointer',
+              '&:hover': {
+                boxShadow: 3,
+                bgcolor: 'action.hover'
+              }
+            }}
+            onClick={() => {
+              setEditingBooking(booking);
+              setIsBookingFormOpen(true);
+            }}
+          >
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <Box>
                 <Typography variant="h6">{booking.title || getRoomName(booking.roomId)}</Typography>
@@ -376,7 +429,7 @@ const generateCalendarDays = () => {
                   )}
                 </Typography>
               </Box>
-             <Box sx={{ display: 'flex', gap: 1 }}>
+             <Box sx={{ display: 'flex', gap: 1 }} onClick={(e) => e.stopPropagation()}>
                 <Button
                   startIcon={<EditIcon />}
                   onClick={() => {
@@ -476,8 +529,6 @@ const generateCalendarDays = () => {
                       Delete
                     </Button>
                   </Box>
-
-
                 </TableCell>
               </TableRow>
             ))
@@ -505,6 +556,8 @@ const generateCalendarDays = () => {
       });
     }
 
+    const calendarBookings = showAllBookings ? flattenedAllBookings : flattenedBookings;
+
     return (
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container>
@@ -528,88 +581,99 @@ const generateCalendarDays = () => {
               </Box>
             ))}
           </Grid>
-          <Grid item xs={10}>
-            <Typography
-              variant="subtitle2"
-              sx={{ p: 1, textAlign: "center", fontWeight: "bold", backgroundColor: "#f5f5f5" }}
-            >
-              {format(selectedDate, "MMMM d, yyyy")}
-            </Typography>
-            {timeSlots.map((slot, index) => {
-              const slotBookings = filteredBookings
-                .filter(booking => {
-                  if (!isSameDay(parseISO(booking.date), selectedDate)) return false;
-                  
-                  const slotStart = slot.start;
-                  const slotEnd = slot.end;
-                  const bookingStart = booking.startTime;
-                  const bookingEnd = booking.endTime;
-                  
-                  return !(bookingEnd <= slotStart || bookingStart >= slotEnd);
-                })
-                .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-              return (
-                <Box
-                  key={index}
-                  sx={{
-                    p: 1,
-                    height: 80,
-                    borderTop: "1px solid #eee",
-                    borderLeft: "1px solid #eee",
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
+          {rooms.slice(0, 5).map((room) => {
+            const roomCount = Math.min(rooms.length, 5);
+            const xs = Math.max(2, Math.floor(10 / roomCount));
+            return (
+              <Grid item key={room.id} xs={xs} sx={{ borderRight: "1px solid #eee" }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ p: 1, textAlign: "center", fontWeight: "bold", backgroundColor: "#f5f5f5" }}
                 >
-                  {slotBookings.map((booking, idx) => {
-                    const startMins = parseInt(booking.startTime.split(':')[0]) * 60 + parseInt(booking.startTime.split(':')[1]);
-                    const endMins = parseInt(booking.endTime.split(':')[0]) * 60 + parseInt(booking.endTime.split(':')[1]);
-                    const slotStartMins = parseInt(slot.start.split(':')[0]) * 60 + parseInt(slot.start.split(':')[1]);
-                    
-                    const top = Math.max(0, (startMins - slotStartMins) / 60 * 80);
-                    const height = Math.min(
-                      80, 
-                      ((endMins - Math.max(startMins, slotStartMins)) / 60 * 80)
-                    );
+                  {room.name}
+                </Typography>
+                {timeSlots.map((slot, index) => {
+                  const slotBookings = calendarBookings
+                    .filter(booking => {
+                      if (booking.roomId !== room.id) return false;
+                      if (!isSameDay(parseISO(booking.date), selectedDate)) return false;
+                      
+                      const slotStart = slot.start;
+                      const slotEnd = slot.end;
+                      const bookingStart = booking.startTime;
+                      const bookingEnd = booking.endTime;
+                      
+                      return !(bookingEnd <= slotStart || bookingStart >= slotEnd);
+                    })
+                    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-                    const left = `${(idx * 33) % 100}%`;
-                    const width = '30%';
-                    const zIndex = idx + 1;
+                  return (
+                    <Box
+                      key={index}
+                      sx={{
+                        p: 1,
+                        height: 80,
+                        borderTop: "1px solid #eee",
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {slotBookings.map((booking, idx) => {
+                        const startMins = parseInt(booking.startTime.split(':')[0]) * 60 + parseInt(booking.startTime.split(':')[1]);
+                        const endMins = parseInt(booking.endTime.split(':')[0]) * 60 + parseInt(booking.endTime.split(':')[1]);
+                        const slotStartMins = parseInt(slot.start.split(':')[0]) * 60 + parseInt(slot.start.split(':')[1]);
+                        
+                        const top = Math.max(0, (startMins - slotStartMins) / 60 * 80);
+                        const height = Math.min(
+                          80, 
+                          ((endMins - Math.max(startMins, slotStartMins)) / 60 * 80)
+                        );
 
-                    return (
-                      <Paper
-                        key={`${booking.id}-${booking.date}`}
-                        sx={{
-                          position: 'absolute',
-                          top: `${top}px`,
-                          height: `${height}px`,
-                          left,
-                          width,
-                          zIndex,
-                          p: 0.5,
-                          bgcolor: booking.isRecurring ? "#ffe0b2" : "#c8e6c9",
-                          color: booking.isRecurring ? "#e65100" : "#2e7d32",
-                          overflow: 'hidden',
-                          borderLeft: `3px solid ${booking.isRecurring ? "#fb8c00" : "#4caf50"}`,
-                          '&:hover': {
-                            boxShadow: 1,
-                            transform: 'scale(1.02)'
-                          }
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight="bold" noWrap fontSize="0.8rem">
-                          {booking.title || getRoomName(booking.roomId)}
-                        </Typography>
-                        <Typography variant="caption" noWrap fontSize="0.7rem">
-                          {booking.startTime}-{booking.endTime}
-                        </Typography>
-                      </Paper>
-                    );
-                  })}
-                </Box>
-              );
-            })}
-          </Grid>
+                        const left = `${(idx * 33) % 100}%`;
+                        const width = '30%';
+                        const zIndex = idx + 1;
+
+                        return (
+                          <Paper
+                            key={`${booking.id}-${booking.date}`}
+                            onClick={() => {
+                              setEditingBooking(booking);
+                              setIsBookingFormOpen(true);
+                            }}
+                            sx={{
+                              position: 'absolute',
+                              top: `${top}px`,
+                              height: `${height}px`,
+                              left,
+                              width,
+                              zIndex,
+                              p: 0.5,
+                              bgcolor: booking.isRecurring ? "#ffe0b2" : "#c8e6c9",
+                              color: booking.isRecurring ? "#e65100" : "#2e7d32",
+                              overflow: 'hidden',
+                              borderLeft: `3px solid ${booking.isRecurring ? "#fb8c00" : "#4caf50"}`,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                boxShadow: 2,
+                                transform: 'scale(1.05)'
+                              }
+                            }}
+                          >
+                            <Typography variant="body2" fontWeight="bold" noWrap fontSize="0.8rem">
+                              {booking.title || "Booked"}
+                            </Typography>
+                            <Typography variant="caption" noWrap fontSize="0.7rem">
+                              {booking.startTime} - {booking.endTime}
+                            </Typography>
+                          </Paper>
+                        );
+                      })}
+                    </Box>
+                  );
+                })}
+              </Grid>
+            );
+          })}
         </Grid>
       </Paper>
     );
@@ -638,9 +702,18 @@ const generateCalendarDays = () => {
             <Typography variant="h5" component="h2" gutterBottom>
               {username}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {email}
             </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PersonIcon />}
+              onClick={() => navigate('/user-settings')}
+              sx={{ textTransform: 'none' }}
+            >
+              Settings
+            </Button>
           </Box>
 
           <Box sx={{ mb: 3 }}>
@@ -718,7 +791,7 @@ const generateCalendarDays = () => {
                     onChange={(e) => setShowAllBookings(e.target.checked)}
                   />
                 }
-                label="Show all bookings"
+                label="Show all rooms and bookings"
               />
             </Box>
           </Box>
