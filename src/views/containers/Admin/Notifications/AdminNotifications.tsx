@@ -22,7 +22,6 @@ import {
   CircularProgress,
   Alert,
   Pagination,
-  Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -371,19 +370,15 @@ const AdminNotifications: React.FC = () => {
 
             {/* Actions */}
             <Grid item xs={12} md={3}>
-              <Stack direction="row" spacing={1}>
-                <Tooltip title="Mark all as read">
-                  <Button
-                    variant="outlined"
-                    startIcon={<MarkEmailReadIcon />}
-                    onClick={handleMarkAllAsRead}
-                    disabled={stats.unread === 0}
-                    fullWidth
-                  >
-                    Mark All Read
-                  </Button>
-                </Tooltip>
-              </Stack>
+              <Button
+                variant="outlined"
+                startIcon={<MarkEmailReadIcon />}
+                onClick={handleMarkAllAsRead}
+                disabled={stats.unread === 0}
+                fullWidth
+              >
+                Mark All Read
+              </Button>
             </Grid>
           </Grid>
 
@@ -474,29 +469,41 @@ const AdminNotifications: React.FC = () => {
                       </Typography>
                     </Box>
 
-                    {/* Actions */}
-                    <Stack direction="row" spacing={1}>
+                    {/* Actions - Matching AdminUsers format */}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                       {!notification.isRead && (
-                        <Tooltip title="Mark as read">
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <IconButton
-                            size="small"
                             onClick={() => handleMarkAsRead(notification.notificationId)}
-                            color="primary"
+                            sx={{ color: '#1e5393' }}
                           >
                             <CheckCircleIcon />
                           </IconButton>
-                        </Tooltip>
+                          <Typography
+                            variant="body2"
+                            onClick={() => handleMarkAsRead(notification.notificationId)}
+                            sx={{ cursor: 'pointer', color: '#1e5393', fontSize: '0.75rem' }}
+                          >
+                            Mark Read
+                          </Typography>
+                        </Box>
                       )}
-                      <Tooltip title="Delete">
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <IconButton
-                          size="small"
                           onClick={() => handleDelete(notification.notificationId)}
-                          color="error"
+                          sx={{ color: '#f44336' }}
                         >
                           <DeleteIcon />
                         </IconButton>
-                      </Tooltip>
-                    </Stack>
+                        <Typography
+                          variant="body2"
+                          onClick={() => handleDelete(notification.notificationId)}
+                          sx={{ cursor: 'pointer', color: '#f44336', fontSize: '0.75rem' }}
+                        >
+                          Delete
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Paper>
                   {index < paginatedNotifications.length - 1 && <Divider />}
                 </Box>

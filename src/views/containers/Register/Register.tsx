@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Box, Typography, TextField, Button, Container, Grid, Checkbox, FormControlLabel, Paper } from "@mui/material";
+import { Box, Typography, TextField, Button, Container, Grid, Checkbox, FormControlLabel, Paper, Alert } from "@mui/material";
 import { PATHS } from "../../../constant";
 import { LandingNav } from "../../components/LandingNav";
 import { SiteFooter } from "../../components/SiteFooter";
@@ -26,6 +26,7 @@ const Register: React.FC = () => {
     confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -37,6 +38,7 @@ const Register: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     // Validate confirm password
     if (formData.password !== formData.confirmPassword) {
@@ -54,8 +56,13 @@ const Register: React.FC = () => {
         password: formData.password,
       });
 
-      // Redirect to login after successful registration
-      navigate(PATHS.LOGIN.path);
+      // Show success message
+      setSuccess("Registration successful! Redirecting to login...");
+
+      // Wait 2 seconds before redirecting to login
+      setTimeout(() => {
+        navigate(PATHS.LOGIN.path);
+      }, 2000);
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again later.");
     } finally {
@@ -77,9 +84,15 @@ return (
           </Typography>
 
           {error && (
-            <Typography color="error" align="center" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
-            </Typography>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {success}
+            </Alert>
           )}
 
           <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
@@ -94,6 +107,7 @@ return (
                   label="First Name"
                   value={formData.firstName}
                   onChange={handleChange}
+                  disabled={loading || !!success}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -106,6 +120,7 @@ return (
                   autoComplete="family-name"
                   value={formData.lastName}
                   onChange={handleChange}
+                  disabled={loading || !!success}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -118,6 +133,7 @@ return (
                   autoComplete="username"
                   value={formData.username}
                   onChange={handleChange}
+                  disabled={loading || !!success}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -130,6 +146,7 @@ return (
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={loading || !!success}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -143,6 +160,7 @@ return (
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={loading || !!success}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -156,11 +174,12 @@ return (
                   autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  disabled={loading || !!success}
                 />
               </Grid>
               <Grid item xs={12}>
                 <FormControlLabel
-                  control={<Checkbox required name="terms" color="primary" />}
+                  control={<Checkbox required name="terms" color="primary" disabled={loading || !!success} />}
                   label="I agree to the Terms of Service and Privacy Policy."
                 />
               </Grid>
@@ -170,7 +189,7 @@ return (
               type="submit"
               fullWidth
               variant="contained"
-              disabled={loading}
+              disabled={loading || !!success}
               sx={{
                 mt: 3,
                 mb: 2,
@@ -181,7 +200,7 @@ return (
                 },
               }}
             >
-              {loading ? "Signing up..." : "Sign Up"}
+              {loading ? "Signing up..." : success ? "Redirecting..." : "Sign Up"}
             </Button>
 
             <Box sx={{ textAlign: "center" }}>

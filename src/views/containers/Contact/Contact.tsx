@@ -16,6 +16,7 @@ import {
   CardContent,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from "@mui/material"
 import LocationOnIcon from "@mui/icons-material/LocationOn"
 import PhoneIcon from "@mui/icons-material/Phone"
@@ -23,19 +24,54 @@ import EmailIcon from "@mui/icons-material/Email"
 import { LandingNav } from "../../components/LandingNav"
 import { SiteFooter } from "../../components/SiteFooter"
 import { PageBanner } from "../../components/PageBanner"
+import { sendContactMessage, ContactFormData } from "../../services/contactService"
 
 const Contact: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
   const [submitted, setSubmitted] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [formData, setFormData] = React.useState<ContactFormData>({
+    name: "",
+    email: "",
+    subject: "General Inquiry",
+    message: "",
+  })
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSubmitted(true)
+    setLoading(true)
+    setError(null)
+
+    try {
+      await sendContactMessage(formData)
+      setSubmitted(true)
+      // Reset form after successful submission
+      setFormData({
+        name: "",
+        email: "",
+        subject: "General Inquiry",
+        message: "",
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleClose = () => {
     setSubmitted(false)
+    setError(null)
   }
 
   const contactInfo = [
@@ -95,13 +131,43 @@ const Contact: React.FC = () => {
               <Box component="form" onSubmit={handleSubmit} noValidate>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField required fullWidth id="name" label="Your Name" name="name" autoComplete="name" />
+                    <TextField 
+                      required 
+                      fullWidth 
+                      id="name" 
+                      label="Your Name" 
+                      name="name" 
+                      autoComplete="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <TextField required fullWidth id="email" label="Email Address" name="email" autoComplete="email" />
+                    <TextField 
+                      required 
+                      fullWidth 
+                      id="email" 
+                      label="Email Address" 
+                      name="email" 
+                      type="email"
+                      autoComplete="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
                   </Grid>
                   <Grid item xs={12}>
-                    <TextField fullWidth id="subject" select label="Subject" defaultValue="General Inquiry">
+                    <TextField 
+                      fullWidth 
+                      id="subject" 
+                      select 
+                      label="Subject" 
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      disabled={loading}
+                    >
                       <MenuItem value="General Inquiry">General Inquiry</MenuItem>
                       <MenuItem value="Technical Support">Technical Support</MenuItem>
                       <MenuItem value="Billing Question">Billing Question</MenuItem>
@@ -110,13 +176,25 @@ const Contact: React.FC = () => {
                     </TextField>
                   </Grid>
                   <Grid item xs={12}>
-                    <TextField required fullWidth id="message" label="Your Message" name="message" multiline rows={6} />
+                    <TextField 
+                      required 
+                      fullWidth 
+                      id="message" 
+                      label="Your Message" 
+                      name="message" 
+                      multiline 
+                      rows={6}
+                      value={formData.message}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
                   </Grid>
                 </Grid>
 
                 <Button
                   type="submit"
                   variant="contained"
+                  disabled={loading || !formData.name || !formData.email || !formData.message}
                   sx={{
                     mt: 3,
                     py: 1.5,
@@ -124,9 +202,19 @@ const Contact: React.FC = () => {
                     "&:hover": {
                       bgcolor: "#184377",
                     },
+                    "&:disabled": {
+                      bgcolor: "#ccc",
+                    },
                   }}
                 >
-                  Send Message
+                  {loading ? (
+                    <>
+                      <CircularProgress size={20} sx={{ mr: 1, color: "white" }} />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Message"
+                  )}
                 </Button>
               </Box>
             </Paper>
@@ -241,6 +329,12 @@ const Contact: React.FC = () => {
       <Snackbar open={submitted} autoHideDuration={6000} onClose={handleClose}>
         <Alert onClose={handleClose} severity="success" sx={{ width: "100%" }}>
           Your message has been sent! We'll get back to you soon.
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={handleClose}>
+        <Alert onClose={handleClose} severity="error" sx={{ width: "100%" }}>
+          {error}
         </Alert>
       </Snackbar>
 
